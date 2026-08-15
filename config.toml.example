@@ -1,0 +1,12 @@
+# fp-int-agents user configuration — overrides config.default.toml
+# Copy this file to config.toml at the project root and fill in your values.
+# config.toml is gitignored — never commit secrets.
+
+[defaults]
+chat_model = "llama3.2"
+embedding_model = "nomic-embed-text"
+agent = "simple"
+
+[llm]
+base_url = "http://localhost:11434/v1"  # Defaults to Ollama
+api_key = "ollama"    # Leave "ollama" for local Ollama; set a real key for a proxy or model provider API.

@@ -2,10 +2,14 @@
 
 A Textual TUI chat app with LangGraph + Ollama + litellm, bu
 
+## Conversations
+- Be concise
+
 ## Code Style
 - Always use type hints
 - Always check context7 for up-to-date docs before using any library/framework
 - run ruff after finishing a task
+- Whenever you plan a new feature, write a test for it first.
 
 ## Stack
 - TUI: Textual

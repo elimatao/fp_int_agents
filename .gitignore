@@ -13,6 +13,8 @@ wheels/
 
 *.pdf
 
+config.toml
+
 # data dir — track structure, ignore contents
 data/*
 !data/.gitkeep
