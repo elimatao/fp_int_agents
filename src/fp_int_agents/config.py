@@ -2,6 +2,7 @@ import pathlib
 import tomllib
 from typing import Any
 
+from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel
 
 DATA_DIR = pathlib.Path("data")
@@ -36,8 +37,11 @@ class QueryConfig(BaseModel):
     thread_id: str
     project_id: str
     chat_model: str
-    retrieval_effort: str = "medium"  # "low" | "medium" | "high"
     active_tools: list[str] = []
+
+    @classmethod
+    def from_runnable_config(cls, config: RunnableConfig) -> "QueryConfig":
+        return cls.model_validate(config["configurable"])
 
 
 class LlmConfig(BaseModel):
