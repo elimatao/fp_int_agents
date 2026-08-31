@@ -1,4 +1,5 @@
 from textual.app import ComposeResult
+from textual.events import Click
 from textual.message import Message
 from textual.widget import Widget
 from textual.widgets import Button, Label, ListItem, ListView
@@ -27,7 +28,11 @@ class ThreadList(Widget):
         margin: 0;
     }
     ThreadList ListView > ListItem {
-        padding: 0 1 0 2;
+        padding: 0 0 0 2;
+    }
+    ThreadList ListView > ListItem > Label {
+        width: 1fr;
+        padding: 0 3 0 0;
     }
     """
 
@@ -42,26 +47,69 @@ class ThreadList(Widget):
             self.thread = thread
             self.project = project
 
-    def __init__(self, project: Project, threads: list[Thread]) -> None:
-        super().__init__()
+    class DeleteThread(Message):
+        def __init__(self, thread: Thread, project: Project) -> None:
+            super().__init__()
+            self.thread = thread
+            self.project = project
+
+    class _DeleteLabel(Widget):
+        DEFAULT_CSS = """
+        _DeleteLabel { dock: right; width: 2; height: 1; color: $error; background: transparent; }
+        _DeleteLabel:hover { text-style: bold; }
+        """
+
+        def render(self) -> str:
+            return "✕"
+
+        def on_click(self, event: Click) -> None:
+            event.stop()
+            item = self.parent
+            if not isinstance(item, ListItem):
+                return
+            item_id = item.id or ""
+            if not item_id.startswith("thread-"):
+                return
+            thread_id = item_id.removeprefix("thread-")
+            # Walk up to our ThreadList ancestor.
+            node = self.parent
+            while node is not None and not isinstance(node, ThreadList):
+                node = node.parent
+            if not isinstance(node, ThreadList):
+                return
+            tl: ThreadList = node
+            thread = next((t for t in tl._threads if t.id == thread_id), None)
+            if thread:
+                tl.post_message(ThreadList.DeleteThread(thread, tl._project))
+
+    def __init__(self, project: Project, threads: list[Thread], **kwargs) -> None:
+        super().__init__(**kwargs)
         self._project = project
         self._threads = list(threads)
+
+    def _make_item(self, thread: Thread) -> ListItem:
+        return ListItem(
+            self._DeleteLabel(id=f"del-thread-{thread.id}"),
+            Label(thread.title or "Untitled"),
+            id=f"thread-{thread.id}",
+        )
 
     def compose(self) -> ComposeResult:
         yield Button("+ New Chat", id="new-thread-btn", variant="default")
         yield ListView(
-            *[
-                ListItem(Label(t.title or "Untitled"), id=f"thread-{t.id}")
-                for t in self._threads
-            ],
+            *[self._make_item(t) for t in self._threads],
             id="thread-lv",
         )
 
     async def add_thread(self, thread: Thread) -> None:
         self._threads.insert(0, thread)
-        item = ListItem(Label(thread.title or "Untitled"), id=f"thread-{thread.id}")
         lv = self.query_one("#thread-lv", ListView)
-        await lv.mount(item, before=0)
+        await lv.mount(self._make_item(thread), before=0)
+
+    async def remove_thread(self, thread_id: str) -> None:
+        self._threads = [t for t in self._threads if t.id != thread_id]
+        item = self.query_one(f"#thread-{thread_id}", ListItem)
+        await item.remove()
 
     def set_active(self, thread_id: str) -> None:
         """Highlight the item matching thread_id, clear all highlights if not found."""
@@ -76,7 +124,8 @@ class ThreadList(Widget):
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         event.stop()
-        self.post_message(self.NewThread(self._project))
+        if event.button.id == "new-thread-btn":
+            self.post_message(self.NewThread(self._project))
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         event.stop()

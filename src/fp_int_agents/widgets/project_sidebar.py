@@ -1,11 +1,119 @@
 from textual.app import ComposeResult
-from textual.containers import VerticalScroll
+from textual.containers import Horizontal, VerticalScroll
+from textual.events import Click
 from textual.message import Message
+from textual.reactive import reactive
 from textual.widget import Widget
-from textual.widgets import Button, Collapsible
+from textual.widgets import Button
 
 from fp_int_agents.config import Project, Thread
 from fp_int_agents.widgets.thread_list import ThreadList
+
+
+class _ProjectRow(Widget):
+    """Project header row (toggle + name + delete) above a collapsible ThreadList."""
+
+    collapsed: reactive[bool] = reactive(True)
+
+    DEFAULT_CSS = """
+    _ProjectRow {
+        height: auto;
+        layout: vertical;
+        width: 100%;
+    }
+    _ProjectRow > Horizontal {
+        height: 1;
+        width: 100%;
+    }
+    _ProjectRow > ThreadList {
+        display: none;
+    }
+    _ProjectRow.-expanded > ThreadList {
+        display: block;
+    }
+    _ProjectRow.--active _NameLabel {
+        color: $accent;
+        text-style: bold;
+    }
+    _ProjectRow.--active _ToggleLabel {
+        color: $accent;
+    }
+    """
+
+    class _ToggleLabel(Widget):
+        DEFAULT_CSS = """
+        _ToggleLabel { width: 2; height: 1; color: $foreground; background: transparent; }
+        _ToggleLabel:hover { color: $accent; }
+        """
+
+        def __init__(self, row: "_ProjectRow", **kwargs) -> None:
+            super().__init__(**kwargs)
+            self._row = row
+
+        def render(self) -> str:
+            return "▼" if not self._row.collapsed else "▶"
+
+        def on_click(self, event: Click) -> None:
+            event.stop()
+            self._row.collapsed = not self._row.collapsed
+
+    class _NameLabel(Widget):
+        DEFAULT_CSS = """
+        _NameLabel { width: 1fr; height: 1; padding: 0 1; color: $foreground; background: transparent; }
+        _NameLabel:hover { color: $accent; }
+        """
+
+        def __init__(self, name: str, row: "_ProjectRow", **kwargs) -> None:
+            super().__init__(**kwargs)
+            self._name = name
+            self._row = row
+
+        def render(self) -> str:
+            return self._name
+
+        def on_click(self, event: Click) -> None:
+            event.stop()
+            self._row.collapsed = not self._row.collapsed
+
+    class _DeleteLabel(Widget):
+        DEFAULT_CSS = """
+        _DeleteLabel { width: 2; height: 1; color: $error; background: transparent; }
+        _DeleteLabel:hover { text-style: bold; }
+        """
+
+        def __init__(self, project: "Project", **kwargs) -> None:
+            super().__init__(**kwargs)
+            self._project = project
+
+        def render(self) -> str:
+            return "✕"
+
+        def on_click(self, event: Click) -> None:
+            event.stop()
+            self.post_message(ProjectSidebar.DeleteProject(self._project))
+
+    def __init__(self, project: Project, threads: list[Thread]) -> None:
+        super().__init__(id=f"row-{project.id}")
+        self._project = project
+        self._threads = threads
+
+    def compose(self) -> ComposeResult:
+        with Horizontal():
+            yield self._ToggleLabel(self)
+            yield self._NameLabel(self._project.name, self, id=f"name-project-{self._project.id}")
+            yield self._DeleteLabel(self._project, id=f"del-project-{self._project.id}")
+        yield ThreadList(self._project, self._threads, id=f"tl-{self._project.id}")
+
+    def watch_collapsed(self, collapsed: bool) -> None:
+        self.set_class(not collapsed, "-expanded")
+        self.query_one(self._ToggleLabel).refresh()
+
+    def expand(self) -> None:
+        self.collapsed = False
+
+    @property
+    def thread_list(self) -> ThreadList:
+        return self.query_one(ThreadList)
 
 
 class ProjectSidebar(Widget):
@@ -26,16 +134,6 @@ class ProjectSidebar(Widget):
         height: 1fr;
         margin-top: 1;
     }
-    ProjectSidebar Collapsible > CollapsibleTitle {
-        padding: 0 1;
-    }
-    ProjectSidebar Collapsible > Contents {
-        padding: 0;
-    }
-    ProjectSidebar Collapsible.--active > CollapsibleTitle {
-        color: $accent;
-        text-style: bold;
-    }
     """
 
     class NewProject(Message):
@@ -52,6 +150,17 @@ class ProjectSidebar(Widget):
             self.thread = thread
             self.project = project
 
+    class DeleteThread(Message):
+        def __init__(self, thread: Thread, project: Project) -> None:
+            super().__init__()
+            self.thread = thread
+            self.project = project
+
+    class DeleteProject(Message):
+        def __init__(self, project: Project) -> None:
+            super().__init__()
+            self.project = project
+
     def __init__(self) -> None:
         super().__init__()
         self._projects: list[Project] = []
@@ -65,39 +174,36 @@ class ProjectSidebar(Widget):
         scroll = self.query_one("#project-scroll", VerticalScroll)
         for project, threads in items:
             self._projects.append(project)
-            await scroll.mount(self._make_collapsible(project, threads))
-
-    def _make_collapsible(self, project: Project, threads: list[Thread]) -> Collapsible:
-        return Collapsible(
-            ThreadList(project, threads),
-            title=project.name,
-            collapsed=True,
-            id=f"project-{project.id}",
-        )
+            await scroll.mount(_ProjectRow(project, threads))
 
     async def add_project(self, project: Project, threads: list[Thread] | None = None) -> None:
         self._projects.insert(0, project)
         scroll = self.query_one("#project-scroll", VerticalScroll)
-        await scroll.mount(self._make_collapsible(project, threads or []), before=0)
+        await scroll.mount(_ProjectRow(project, threads or []), before=0)
 
     async def add_thread(self, project: Project, thread: Thread) -> None:
-        await self.query_one(f"#project-{project.id} ThreadList", ThreadList).add_thread(thread)
+        await self.query_one(f"#tl-{project.id}", ThreadList).add_thread(thread)
+
+    async def remove_thread(self, project_id: str, thread_id: str) -> None:
+        await self.query_one(f"#tl-{project_id}", ThreadList).remove_thread(thread_id)
+
+    async def remove_project(self, project_id: str) -> None:
+        self._projects = [p for p in self._projects if p.id != project_id]
+        await self.query_one(f"#row-{project_id}", _ProjectRow).remove()
 
     def set_active_thread(self, project: Project, thread: Thread) -> None:
-        """Expand+highlight the active project; highlight thread; clear others."""
         self.set_active_project(project)
-        for tl in self.query(ThreadList):
+        for row in self.query(_ProjectRow):
+            tl = row.thread_list
             if tl._project.id == project.id:
                 tl.set_active(thread.id)
             else:
                 tl.set_active("")
 
     def set_active_project(self, project: Project) -> None:
-        """Mark the collapsible for project as active and expand it."""
-        for c in self.query(Collapsible):
-            c.set_class(c.id == f"project-{project.id}", "--active")
-        active = self.query_one(f"#project-{project.id}", Collapsible)
-        active.collapsed = False
+        for row in self.query(_ProjectRow):
+            row.set_class(row._project.id == project.id, "--active")
+        self.query_one(f"#row-{project.id}", _ProjectRow).expand()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "new-project-btn":
@@ -111,3 +217,7 @@ class ProjectSidebar(Widget):
     def on_thread_list_thread_selected(self, event: ThreadList.ThreadSelected) -> None:
         event.stop()
         self.post_message(self.ThreadSelected(event.thread, event.project))
+
+    def on_thread_list_delete_thread(self, event: ThreadList.DeleteThread) -> None:
+        event.stop()
+        self.post_message(self.DeleteThread(event.thread, event.project))

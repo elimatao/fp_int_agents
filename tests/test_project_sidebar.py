@@ -2,10 +2,10 @@
 
 import pytest
 from textual.app import App, ComposeResult
-from textual.widgets import Collapsible, ListView
+from textual.widgets import ListView
 
 from fp_int_agents.config import Project, Thread
-from fp_int_agents.widgets.project_sidebar import ProjectSidebar
+from fp_int_agents.widgets.project_sidebar import ProjectSidebar, _ProjectRow
 from fp_int_agents.widgets.thread_list import ThreadList
 
 
@@ -125,7 +125,7 @@ async def test_populate_creates_collapsible_per_project() -> None:
         sidebar = pilot.app.query_one(ProjectSidebar)
         await sidebar.populate([(p1, []), (p2, [])])
         await pilot.pause()
-        assert len(pilot.app.query(Collapsible)) == 2
+        assert len(pilot.app.query(_ProjectRow)) == 2
 
 
 @pytest.mark.asyncio
@@ -135,8 +135,8 @@ async def test_projects_collapsed_by_default() -> None:
         sidebar = pilot.app.query_one(ProjectSidebar)
         await sidebar.populate([(p1, []), (p2, [])])
         await pilot.pause()
-        for c in pilot.app.query(Collapsible):
-            assert c.collapsed is True
+        for row in pilot.app.query(_ProjectRow):
+            assert row.collapsed is True
 
 
 @pytest.mark.asyncio
@@ -165,5 +165,98 @@ async def test_add_project_adds_collapsible() -> None:
         await sidebar.populate({})
         await sidebar.add_project(p, threads=[])
         await pilot.pause()
-        assert len(pilot.app.query(Collapsible)) == 1
-        assert pilot.app.query_one(Collapsible).collapsed is True
+        assert len(pilot.app.query(_ProjectRow)) == 1
+        assert pilot.app.query_one(_ProjectRow).collapsed is True
+
+
+# ---------------------------------------------------------------------------
+# Delete tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_thread_list_delete_button_per_thread() -> None:
+    p = _project()
+    t1, t2 = _thread(p.id, "A"), _thread(p.id, "B")
+    async with ThreadListApp(p, [t1, t2]).run_test() as pilot:
+        assert pilot.app.query_one(f"#del-thread-{t1.id}")
+        assert pilot.app.query_one(f"#del-thread-{t2.id}")
+
+
+@pytest.mark.asyncio
+async def test_thread_list_delete_posts_message() -> None:
+    received: list[ThreadList.DeleteThread] = []
+    p = _project()
+    t = _thread(p.id, "Chat 1")
+
+    class App_(App):
+        def compose(self) -> ComposeResult:
+            yield ThreadList(p, [t])
+
+        def on_thread_list_delete_thread(self, event: ThreadList.DeleteThread) -> None:
+            received.append(event)
+
+    async with App_().run_test() as pilot:
+        await pilot.click(f"#del-thread-{t.id}")
+        assert len(received) == 1
+        assert received[0].thread.id == t.id
+        assert received[0].project.id == p.id
+
+
+@pytest.mark.asyncio
+async def test_thread_list_remove_thread_removes_item() -> None:
+    p = _project()
+    t1, t2 = _thread(p.id, "A"), _thread(p.id, "B")
+    async with ThreadListApp(p, [t1, t2]).run_test() as pilot:
+        tl = pilot.app.query_one(ThreadList)
+        await tl.remove_thread(t1.id)
+        await pilot.pause()
+        items = list(pilot.app.query_one(ListView).children)
+        assert len(items) == 1
+        assert items[0].id == f"thread-{t2.id}"
+
+
+@pytest.mark.asyncio
+async def test_sidebar_delete_project_button_per_project() -> None:
+    p1, p2 = _project("A"), _project("B")
+    async with SidebarApp().run_test() as pilot:
+        sidebar = pilot.app.query_one(ProjectSidebar)
+        await sidebar.populate([(p1, []), (p2, [])])
+        await pilot.pause()
+        assert pilot.app.query_one(f"#del-project-{p1.id}")
+        assert pilot.app.query_one(f"#del-project-{p2.id}")
+
+
+@pytest.mark.asyncio
+async def test_sidebar_delete_project_posts_message() -> None:
+    received: list[ProjectSidebar.DeleteProject] = []
+    p = _project("Solo")
+
+    class App_(App):
+        def compose(self) -> ComposeResult:
+            yield ProjectSidebar()
+
+        def on_project_sidebar_delete_project(
+            self, event: ProjectSidebar.DeleteProject
+        ) -> None:
+            received.append(event)
+
+    async with App_().run_test() as pilot:
+        sidebar = pilot.app.query_one(ProjectSidebar)
+        await sidebar.populate([(p, [])])
+        await pilot.pause()
+        await pilot.click(f"#del-project-{p.id}")
+        assert len(received) == 1
+        assert received[0].project.id == p.id
+
+
+@pytest.mark.asyncio
+async def test_sidebar_remove_project_removes_collapsible() -> None:
+    p1, p2 = _project("A"), _project("B")
+    async with SidebarApp().run_test() as pilot:
+        sidebar = pilot.app.query_one(ProjectSidebar)
+        await sidebar.populate([(p1, []), (p2, [])])
+        await pilot.pause()
+        await sidebar.remove_project(p1.id)
+        await pilot.pause()
+        assert len(pilot.app.query(_ProjectRow)) == 1

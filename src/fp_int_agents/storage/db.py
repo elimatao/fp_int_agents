@@ -168,3 +168,24 @@ async def list_threads(conn: aiosqlite.Connection, project_id: str) -> list[Thre
     ) as cursor:
         cols = [d[0] for d in cursor.description]
         return [_row_to_thread(row, cols) async for row in cursor]
+
+
+async def delete_thread(
+    conn: aiosqlite.Connection, checkpointer: AsyncSqliteSaver, thread_id: str
+) -> None:
+    await conn.execute("DELETE FROM threads WHERE id = ?", (thread_id,))
+    await conn.commit()
+    await checkpointer.adelete_thread(thread_id)
+
+
+async def delete_project(
+    conn: aiosqlite.Connection,
+    checkpointer: AsyncSqliteSaver,
+    project_id: str,
+    thread_ids: list[str],
+) -> None:
+    # ON DELETE CASCADE removes child threads automatically.
+    await conn.execute("DELETE FROM projects WHERE id = ?", (project_id,))
+    await conn.commit()
+    for tid in thread_ids:
+        await delete_thread(conn, checkpointer, tid)

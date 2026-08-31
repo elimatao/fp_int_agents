@@ -1,3 +1,4 @@
+import asyncio
 from typing import TYPE_CHECKING, cast
 
 from langchain_core.messages import AIMessage, HumanMessage
@@ -33,6 +34,7 @@ class Chat(Widget):
     def __init__(self, query_config: QueryConfig) -> None:
         super().__init__()
         self._query_config = query_config
+        self._agent_task: asyncio.Task | None = None
 
     @property
     def _fp_app(self) -> "FPIntAgentsApp":
@@ -53,6 +55,10 @@ class Chat(Widget):
                 if isinstance(msg, (HumanMessage, AIMessage)):
                     await self._append(msg)
 
+    def on_unmount(self) -> None:
+        if self._agent_task and not self._agent_task.done():
+            self._agent_task.cancel()
+
     async def on_input_bar_submitted(self, event: InputBar.Submitted) -> None:
         project = await get_project(self._fp_app.db.conn, self._query_config.project_id)
         if project is None:
@@ -61,15 +67,23 @@ class Chat(Widget):
         ai_bubble = MessageBubble(AIMessage(content=""))
         await self._scroll.mount(ai_bubble)
         self._scroll.scroll_end(animate=False)
-        async for token in call_agent(
-            project=project,
-            query_config=self._query_config,
-            message=HumanMessage(content=event.text),
-            checkpointer=self._fp_app.db.checkpointer,
-        ):
-            ai_bubble.append_token(token)
-            if ai_bubble.virtual_region.y >= self._scroll.scroll_offset.y:
-                self._scroll.scroll_end(animate=False)
+        self._agent_task = asyncio.get_event_loop().create_task(
+            self._stream_response(ai_bubble, event.text, project)
+        )
+
+    async def _stream_response(self, ai_bubble: "MessageBubble", text: str, project) -> None:
+        try:
+            async for token in call_agent(
+                project=project,
+                query_config=self._query_config,
+                message=HumanMessage(content=text),
+                checkpointer=self._fp_app.db.checkpointer,
+            ):
+                ai_bubble.append_token(token)
+                if ai_bubble.virtual_region.y >= self._scroll.scroll_offset.y:
+                    self._scroll.scroll_end(animate=False)
+        except asyncio.CancelledError:
+            pass
 
     async def _append(self, message: HumanMessage | AIMessage) -> None:
         bubble = MessageBubble(message)
