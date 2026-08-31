@@ -1,34 +1,36 @@
 import pathlib
 import tomllib
+import uuid
 from typing import Any
 
 from langchain_core.runnables import RunnableConfig
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 DATA_DIR = pathlib.Path("data")
 
 
-class ProjectInit(BaseModel, frozen=True):
-    """Frozen at project-init time. Never mutated after creation."""
+class Project(BaseModel):
+    """A project groups threads under a shared agent configuration.
 
-    project_id: str
-    agent: str
-    embedding_model: str
-    extra: dict = {}
+    Immutable after creation: id, agent, chat_model, init_config.
+    Mutable: name, system_prompt, config.
+    """
 
-
-class ProjectMeta(BaseModel):
-    """Mutable project metadata — editable after creation."""
-
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
-    persona: str | None = None
+    agent: str = "simple"
+    chat_model: str
+    system_prompt: str | None = None
+    init_config: dict = {}  # Agent-Specific, Immutable
+    config: dict = {}  # Agent-Specific, Mutable
+    created_at: str | None = None
 
 
-class ProjectConfig(BaseModel):
-    """Full project state: frozen init config + mutable metadata."""
-
-    init: ProjectInit
-    meta: ProjectMeta
+class Thread(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    project_id: str
+    title: str | None = None
+    created_at: str | None = None
 
 
 class QueryConfig(BaseModel):
@@ -43,6 +45,9 @@ class QueryConfig(BaseModel):
     def from_runnable_config(cls, config: RunnableConfig) -> "QueryConfig":
         return cls.model_validate(config["configurable"])
 
+    def to_runnable_config(self) -> RunnableConfig:
+        return {"configurable": self.model_dump()}
+
 
 class LlmConfig(BaseModel):
     base_url: str = "http://localhost:11434/v1"
@@ -54,6 +59,7 @@ class AppConfig(BaseModel):
     embedding_model: str = "nomic-embed-text"
     agent: str = "simple"
     llm: LlmConfig = LlmConfig()
+    db_path: str = "data/app.db"
 
 
 def _load_toml(path: pathlib.Path) -> dict[str, Any]:
@@ -67,4 +73,5 @@ def load_config() -> AppConfig:
         return AppConfig()
     raw = _load_toml(override_path)
     llm_raw = raw.pop("llm", {})
-    return AppConfig.model_validate({**raw, "llm": llm_raw})
+    defaults = raw.pop("defaults", {})
+    return AppConfig.model_validate({**defaults, "llm": llm_raw})

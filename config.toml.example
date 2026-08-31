@@ -6,6 +6,7 @@
 chat_model = "llama3.2"
 embedding_model = "nomic-embed-text"
 agent = "simple"
+db_path = "data/app.db"
 
 [llm]
 base_url = "http://localhost:11434/v1"  # Defaults to Ollama

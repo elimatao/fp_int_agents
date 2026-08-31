@@ -1,19 +1,12 @@
 """Integration test: simple agent calls a tool and returns its output."""
 
 import pytest
+from conftest import get_model_id
 from langchain_core.messages import HumanMessage
 from langchain_core.tools import tool
 
 from fp_int_agents.agents.registry import AGENTS
-from fp_int_agents.config import (
-    AppConfig,
-    ProjectConfig,
-    ProjectInit,
-    ProjectMeta,
-    QueryConfig,
-    load_config,
-)
-from fp_int_agents.llm.models import list_models
+from fp_int_agents.config import QueryConfig, load_config
 from fp_int_agents.tools.registry import register
 
 TOOL_RESPONSE = "poooong"
@@ -30,24 +23,10 @@ def register_ping_tool():
     register(ping)
 
 
-@pytest.fixture
-def project_config() -> ProjectConfig:
-    return ProjectConfig(
-        init=ProjectInit(
-            project_id="test", agent="simple", embedding_model="nomic-embed-text"
-        ),
-        meta=ProjectMeta(name="test"),
-    )
-
-
 @pytest.mark.asyncio
-async def test_agent_calls_tool_and_returns_response(project_config: ProjectConfig):
-    app_cfg: AppConfig = load_config()
-    models = await list_models(
-        base_url=app_cfg.llm.base_url, api_key=app_cfg.llm.api_key
-    )
-    assert models, "No models available"
-    model_id = models[0].id
+async def test_agent_calls_tool_and_returns_response(project_config):
+    app_cfg = load_config()
+    model_id = await get_model_id(app_cfg)
 
     agent = AGENTS["simple"](project_config)
 

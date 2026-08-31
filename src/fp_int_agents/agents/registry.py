@@ -1,10 +1,11 @@
 from collections.abc import Callable
 
+from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.graph.state import CompiledStateGraph
 
-from fp_int_agents.config import ProjectConfig
+from fp_int_agents.config import Project
 
-AgentFactory = Callable[[ProjectConfig], CompiledStateGraph]
+AgentFactory = Callable[[Project, BaseCheckpointSaver | None], CompiledStateGraph]
 
 AGENTS: dict[str, AgentFactory] = {}
 

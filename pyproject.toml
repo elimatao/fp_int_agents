@@ -10,6 +10,7 @@ requires-python = ">=3.13"
 dependencies = [
     "langchain-openai>=1.5.1",
     "langgraph>=1.2.11",
+    "langgraph-checkpoint-sqlite>=3.1.1",
     "textual>=8.2.8",
 ]
 
@@ -19,6 +20,9 @@ fp-int-agents = "fp_int_agents:main"
 [build-system]
 requires = ["uv_build>=0.12.3,<0.13.0"]
 build-backend = "uv_build"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
 
 [dependency-groups]
 dev = [

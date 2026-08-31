@@ -3,7 +3,7 @@
 A Textual TUI chat app with LangGraph + Ollama + litellm, bu
 
 ## Conversations
-- Be concise
+- Be very concise
 
 ## Code Style
 - Always use type hints

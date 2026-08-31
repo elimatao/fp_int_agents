@@ -1,28 +1,31 @@
-import pathlib
-import sys
-
 from textual.app import App, ComposeResult
-from textual.widgets import Footer, Header, Label
+from textual.widgets import Footer, Header
 
-from .config import DATA_DIR, AppConfig, load_config
+from .config import AppConfig, QueryConfig, Thread
 from .constants import APP_NAME
-
-
-def _check_project_root() -> None:
-    if not pathlib.Path("pyproject.toml").exists():
-        print("Error: must be run from the project root (no pyproject.toml found).")
-        sys.exit(1)
-    DATA_DIR.mkdir(exist_ok=True)
+from .storage.db import DB, create_project, create_thread
+from .widgets.chat import Chat
 
 
 class FPIntAgentsApp(App):
     TITLE = APP_NAME
 
+    def __init__(self, db: DB, config: AppConfig) -> None:
+        self.db = db
+        self.config = config
+        super().__init__()
+
     def compose(self) -> ComposeResult:
         yield Header()
-        yield Label(f"Welcome to {self.TITLE}. No project loaded.")
         yield Footer()
 
-    def on_mount(self) -> None:
+    async def on_mount(self) -> None:
         self.theme = "tokyo-night"
-        self._config: AppConfig = load_config()
+        project = await create_project(self.db.conn, "Test Project", self.config.chat_model)
+        thread: Thread = await create_thread(self.db.conn, project.id)
+        query_config = QueryConfig(
+            thread_id=thread.id,
+            project_id=project.id,
+            chat_model=self.config.chat_model,
+        )
+        await self.mount(Chat(query_config), before=self.query_one(Footer))
