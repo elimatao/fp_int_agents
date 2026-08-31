@@ -44,6 +44,15 @@ class Chat(Widget):
             self._scroll = scroll
         yield InputBar()
 
+    async def on_mount(self) -> None:
+        snapshot = await self._fp_app.db.checkpointer.aget(
+            self._query_config.to_runnable_config()
+        )
+        if snapshot:
+            for msg in snapshot["channel_values"].get("messages", []):
+                if isinstance(msg, (HumanMessage, AIMessage)):
+                    await self._append(msg)
+
     async def on_input_bar_submitted(self, event: InputBar.Submitted) -> None:
         project = await get_project(self._fp_app.db.conn, self._query_config.project_id)
         if project is None:
