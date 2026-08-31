@@ -59,28 +59,19 @@ class ThreadList(Widget):
         _DeleteLabel:hover { text-style: bold; }
         """
 
+        def __init__(self, thread: "Thread", tl: "ThreadList", **kwargs) -> None:
+            super().__init__(**kwargs)
+            self._thread = thread
+            self._tl = tl
+
         def render(self) -> str:
             return "✕"
 
         def on_click(self, event: Click) -> None:
             event.stop()
-            item = self.parent
-            if not isinstance(item, ListItem):
-                return
-            item_id = item.id or ""
-            if not item_id.startswith("thread-"):
-                return
-            thread_id = item_id.removeprefix("thread-")
-            # Walk up to our ThreadList ancestor.
-            node = self.parent
-            while node is not None and not isinstance(node, ThreadList):
-                node = node.parent
-            if not isinstance(node, ThreadList):
-                return
-            tl: ThreadList = node
-            thread = next((t for t in tl._threads if t.id == thread_id), None)
-            if thread:
-                tl.post_message(ThreadList.DeleteThread(thread, tl._project))
+            self._tl.post_message(
+                ThreadList.DeleteThread(self._thread, self._tl._project)
+            )
 
     def __init__(self, project: Project, threads: list[Thread], **kwargs) -> None:
         super().__init__(**kwargs)
@@ -89,7 +80,7 @@ class ThreadList(Widget):
 
     def _make_item(self, thread: Thread) -> ListItem:
         return ListItem(
-            self._DeleteLabel(id=f"del-thread-{thread.id}"),
+            self._DeleteLabel(thread, self, id=f"del-thread-{thread.id}"),
             Label(thread.title or "Untitled"),
             id=f"thread-{thread.id}",
         )

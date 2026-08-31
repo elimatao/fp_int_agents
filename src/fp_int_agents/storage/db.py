@@ -184,8 +184,7 @@ async def delete_project(
     project_id: str,
     thread_ids: list[str],
 ) -> None:
-    # ON DELETE CASCADE removes child threads automatically.
     await conn.execute("DELETE FROM projects WHERE id = ?", (project_id,))
     await conn.commit()
     for tid in thread_ids:
-        await delete_thread(conn, checkpointer, tid)
+        await checkpointer.adelete_thread(tid)

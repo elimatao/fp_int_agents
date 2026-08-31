@@ -18,8 +18,5 @@ async def call_agent(
     async for event in agent.astream_events(
         {"messages": [message]}, runnable_config, version="v2"
     ):
-        if (
-            event["event"] == "on_chat_model_stream"
-            and event["data"]["chunk"].content
-        ):
+        if event["event"] == "on_chat_model_stream" and event["data"]["chunk"].content:
             yield event["data"]["chunk"].content

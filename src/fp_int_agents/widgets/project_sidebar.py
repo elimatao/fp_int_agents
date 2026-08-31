@@ -100,7 +100,9 @@ class _ProjectRow(Widget):
     def compose(self) -> ComposeResult:
         with Horizontal():
             yield self._ToggleLabel(self)
-            yield self._NameLabel(self._project.name, self, id=f"name-project-{self._project.id}")
+            yield self._NameLabel(
+                self._project.name, self, id=f"name-project-{self._project.id}"
+            )
             yield self._DeleteLabel(self._project, id=f"del-project-{self._project.id}")
         yield ThreadList(self._project, self._threads, id=f"tl-{self._project.id}")
 
@@ -169,14 +171,18 @@ class ProjectSidebar(Widget):
         yield Button("+ New Project", id="new-project-btn", variant="primary")
         yield VerticalScroll(id="project-scroll")
 
-    async def populate(self, data: dict[Project, list[Thread]] | list[tuple[Project, list[Thread]]]) -> None:
+    async def populate(
+        self, data: dict[Project, list[Thread]] | list[tuple[Project, list[Thread]]]
+    ) -> None:
         items = data.items() if isinstance(data, dict) else data
         scroll = self.query_one("#project-scroll", VerticalScroll)
         for project, threads in items:
             self._projects.append(project)
             await scroll.mount(_ProjectRow(project, threads))
 
-    async def add_project(self, project: Project, threads: list[Thread] | None = None) -> None:
+    async def add_project(
+        self, project: Project, threads: list[Thread] | None = None
+    ) -> None:
         self._projects.insert(0, project)
         scroll = self.query_one("#project-scroll", VerticalScroll)
         await scroll.mount(_ProjectRow(project, threads or []), before=0)

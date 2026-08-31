@@ -39,6 +39,7 @@ class Chat(Widget):
     @property
     def _fp_app(self) -> "FPIntAgentsApp":
         from fp_int_agents.app import FPIntAgentsApp
+
         return cast(FPIntAgentsApp, self.app)
 
     def compose(self) -> ComposeResult:
@@ -67,11 +68,13 @@ class Chat(Widget):
         ai_bubble = MessageBubble(AIMessage(content=""))
         await self._scroll.mount(ai_bubble)
         self._scroll.scroll_end(animate=False)
-        self._agent_task = asyncio.get_event_loop().create_task(
+        self._agent_task = asyncio.create_task(
             self._stream_response(ai_bubble, event.text, project)
         )
 
-    async def _stream_response(self, ai_bubble: "MessageBubble", text: str, project) -> None:
+    async def _stream_response(
+        self, ai_bubble: "MessageBubble", text: str, project
+    ) -> None:
         try:
             async for token in call_agent(
                 project=project,

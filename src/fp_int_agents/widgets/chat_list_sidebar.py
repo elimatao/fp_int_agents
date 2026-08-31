@@ -51,7 +51,9 @@ class ChatListSidebar(Widget):
         with ListView() as lv:
             self._list_view = lv
             for thread in self._threads:
-                yield ListItem(Label(thread.title or "Untitled"), id=f"thread-{thread.id}")
+                yield ListItem(
+                    Label(thread.title or "Untitled"), id=f"thread-{thread.id}"
+                )
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "new-chat-btn":
