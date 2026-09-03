@@ -38,14 +38,12 @@ class MessageBubble(Widget):
     """
 
     def __init__(self, message: HumanMessage | AIMessage) -> None:
-        role = "human" if isinstance(message, HumanMessage) else "ai"
-        super().__init__(classes=role)
-        self._message = message
-        self._role = role
+        is_human = isinstance(message, HumanMessage)
+        super().__init__(classes="human" if is_human else "ai")
         self._content = message.content if isinstance(message.content, str) else ""
 
     def compose(self) -> ComposeResult:
-        label = "You" if self._role == "human" else "Assistant"
+        label = "You" if "human" in self.classes else "Assistant"
         with Widget(classes="bubble-content"):
             yield Static(label, classes="bubble-role")
             yield Markdown(self._content)

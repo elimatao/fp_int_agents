@@ -1,3 +1,5 @@
+import asyncio
+
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal
 from textual.widgets import Footer, Header
@@ -50,13 +52,13 @@ class FPIntAgentsApp(App):
             )
             projects = [project]
 
-        data: list[tuple] = []
-        for p in projects:
-            threads = await list_threads(self.db.conn, p.id)
+        threads_per_project = await asyncio.gather(
+            *[list_threads(self.db.conn, p.id) for p in projects]
+        )
+        data: list[tuple[Project, list[Thread]]] = []
+        for p, threads in zip(projects, threads_per_project):
             if not threads:
-                t: Thread = await create_thread(
-                    self.db.conn, p.id, "Default Thread Title"
-                )
+                t = await create_thread(self.db.conn, p.id, "Default Thread Title")
                 threads = [t]
             data.append((p, threads))
 

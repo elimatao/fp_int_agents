@@ -171,12 +171,9 @@ class ProjectSidebar(Widget):
         yield Button("+ New Project", id="new-project-btn", variant="primary")
         yield VerticalScroll(id="project-scroll")
 
-    async def populate(
-        self, data: dict[Project, list[Thread]] | list[tuple[Project, list[Thread]]]
-    ) -> None:
-        items = data.items() if isinstance(data, dict) else data
+    async def populate(self, data: list[tuple[Project, list[Thread]]]) -> None:
         scroll = self.query_one("#project-scroll", VerticalScroll)
-        for project, threads in items:
+        for project, threads in data:
             self._projects.append(project)
             await scroll.mount(_ProjectRow(project, threads))
 
@@ -198,18 +195,14 @@ class ProjectSidebar(Widget):
         await self.query_one(f"#row-{project_id}", _ProjectRow).remove()
 
     def set_active_thread(self, project: Project, thread: Thread) -> None:
-        self.set_active_project(project)
         for row in self.query(_ProjectRow):
-            tl = row.thread_list
-            if tl._project.id == project.id:
-                tl.set_active(thread.id)
+            is_active = row._project.id == project.id
+            row.set_class(is_active, "--active")
+            if is_active:
+                row.expand()
+                row.thread_list.set_active(thread.id)
             else:
-                tl.set_active("")
-
-    def set_active_project(self, project: Project) -> None:
-        for row in self.query(_ProjectRow):
-            row.set_class(row._project.id == project.id, "--active")
-        self.query_one(f"#row-{project.id}", _ProjectRow).expand()
+                row.thread_list.set_active("")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "new-project-btn":

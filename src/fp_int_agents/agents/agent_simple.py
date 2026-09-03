@@ -1,7 +1,3 @@
-"""
-Simple ReAct agent
-"""
-
 import operator
 from typing import Annotated, Literal
 
@@ -20,19 +16,11 @@ from fp_int_agents.tools.registry import get_tool, get_tools
 
 
 class SimpleAgentInitConfig(BaseModel):
-    """Immutable agent-specific config stored in Project.init_config for the simple agent.
-
-    Deserialize from a project with:
-        init_cfg = SimpleAgentInitConfig.model_validate(project.init_config)
-    """
+    """Immutable agent-specific config for the simple agent (stored in Project.init_config)."""
 
 
 class SimpleAgentConfig(BaseModel):
-    """Mutable agent-specific config stored in Project.config for the simple agent.
-
-    Deserialize from a project with:
-        agent_cfg = SimpleAgentConfig.model_validate(project.config)
-    """
+    """Mutable agent-specific config for the simple agent (stored in Project.config)."""
 
 
 class AgentState(TypedDict):
@@ -84,8 +72,8 @@ def build_agent(
     project: Project,
     checkpointer: BaseCheckpointSaver | None = None,
 ) -> CompiledStateGraph:
-    _ = SimpleAgentInitConfig.model_validate(project.init_config)
-    _ = SimpleAgentConfig.model_validate(project.config)
+    SimpleAgentInitConfig.model_validate(project.init_config)
+    SimpleAgentConfig.model_validate(project.config)
     builder = StateGraph(AgentState)
     builder.add_node("llm_call", _llm_call)
     builder.add_node("tool_node", _tool_node)

@@ -47,6 +47,10 @@ def _row_to_thread(row: tuple, cols: list[str]) -> Thread:
     return Thread.model_validate(dict(zip(cols, row)))
 
 
+def _cols(cursor: aiosqlite.Cursor) -> list[str]:
+    return [d[0] for d in cursor.description]
+
+
 @dataclass
 class DB:
     conn: aiosqlite.Connection
@@ -109,14 +113,14 @@ async def get_project(conn: aiosqlite.Connection, project_id: str) -> Project | 
         row = await cursor.fetchone()
         if row is None:
             return None
-        return _row_to_project(row, [d[0] for d in cursor.description])
+        return _row_to_project(row, _cols(cursor))
 
 
 async def list_projects(conn: aiosqlite.Connection) -> list[Project]:
     async with conn.execute(
         "SELECT id, name, agent, chat_model, system_prompt, init_config, config, created_at FROM projects ORDER BY created_at DESC"
     ) as cursor:
-        cols = [d[0] for d in cursor.description]
+        cols = _cols(cursor)
         return [_row_to_project(row, cols) async for row in cursor]
 
 
@@ -166,7 +170,7 @@ async def list_threads(conn: aiosqlite.Connection, project_id: str) -> list[Thre
         "SELECT id, project_id, title, created_at FROM threads WHERE project_id = ? ORDER BY created_at DESC",
         (project_id,),
     ) as cursor:
-        cols = [d[0] for d in cursor.description]
+        cols = _cols(cursor)
         return [_row_to_thread(row, cols) async for row in cursor]
 
 
