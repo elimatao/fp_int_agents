@@ -1,4 +1,6 @@
 import pytest
+import pytest_asyncio
+from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 
 from fp_int_agents.config import AppConfig, Project
 from fp_int_agents.llm.models import list_models
@@ -11,6 +13,12 @@ def project_config() -> Project:
         agent="simple",
         chat_model="llama3.2",
     )
+
+
+@pytest_asyncio.fixture
+async def memory_checkpointer():
+    async with AsyncSqliteSaver.from_conn_string(":memory:") as checkpointer:
+        yield checkpointer
 
 
 async def get_model_id(app_cfg: AppConfig) -> str:

@@ -1,17 +1,24 @@
 import asyncio
 from typing import TYPE_CHECKING, cast
 
-from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from textual.app import ComposeResult
 from textual.containers import VerticalScroll
 from textual.widget import Widget
 
-from fp_int_agents.agents.agent_caller import call_agent
+from fp_int_agents.agents.agent_caller import (
+    TextToken,
+    ToolCallFinished,
+    ToolCallStarted,
+    call_agent,
+    preview_result,
+)
 from fp_int_agents.config import QueryConfig
 from fp_int_agents.storage.db import get_project, update_thread_tools
 
 from .input_bar import InputBar
 from .message_bubble import MessageBubble
+from .tool_call_bubble import ToolCallBubble
 from .tool_selector import ToolSelector
 
 if TYPE_CHECKING:
@@ -52,10 +59,27 @@ class Chat(Widget):
         snapshot = await self._fp_app.db.checkpointer.aget(
             self._query_config.to_runnable_config()
         )
-        if snapshot:
-            for msg in snapshot["channel_values"].get("messages", []):
-                if isinstance(msg, (HumanMessage, AIMessage)):
+        if not snapshot:
+            return
+        messages = snapshot["channel_values"].get("messages", [])
+        results = {m.tool_call_id: m for m in messages if isinstance(m, ToolMessage)}
+        for msg in messages:
+            if isinstance(msg, HumanMessage):
+                await self._append(msg)
+            elif isinstance(msg, AIMessage):
+                if isinstance(msg.content, str) and msg.content:
                     await self._append(msg)
+                for tc in msg.tool_calls:
+                    await self._append_tool_call(tc, results.get(tc["id"]))
+
+    async def _append_tool_call(
+        self, tool_call: dict, result: ToolMessage | None
+    ) -> None:
+        bubble = ToolCallBubble(tool_call["name"], tool_call.get("args", {}))
+        await self._scroll.mount(bubble)
+        if result is not None:
+            bubble.set_result(preview_result(result.content))
+        self._scroll.scroll_end(animate=False)
 
     def on_unmount(self) -> None:
         if self._agent_task and not self._agent_task.done():
@@ -84,26 +108,35 @@ class Chat(Widget):
         if project is None:
             return
         await self._append(HumanMessage(content=event.text))
-        ai_bubble = MessageBubble(AIMessage(content=""))
-        await self._scroll.mount(ai_bubble)
-        self._scroll.scroll_end(animate=False)
         self._agent_task = asyncio.create_task(
-            self._stream_response(ai_bubble, event.text, project)
+            self._stream_response(event.text, project)
         )
 
-    async def _stream_response(
-        self, ai_bubble: "MessageBubble", text: str, project
-    ) -> None:
+    async def _stream_response(self, text: str, project) -> None:
+        text_bubble: MessageBubble | None = None
+        tool_bubbles: dict[str, ToolCallBubble] = {}
         try:
-            async for token in call_agent(
+            async for ev in call_agent(
                 project=project,
                 query_config=self._query_config,
                 message=HumanMessage(content=text),
                 checkpointer=self._fp_app.db.checkpointer,
             ):
-                ai_bubble.append_token(token)
-                if ai_bubble.virtual_region.y >= self._scroll.scroll_offset.y:
-                    self._scroll.scroll_end(animate=False)
+                if isinstance(ev, TextToken):
+                    if text_bubble is None:
+                        text_bubble = MessageBubble(AIMessage(content=""))
+                        await self._scroll.mount(text_bubble)
+                    text_bubble.append_token(ev.text)
+                elif isinstance(ev, ToolCallStarted):
+                    bubble = ToolCallBubble(ev.name, ev.args)
+                    tool_bubbles[ev.run_id] = bubble
+                    await self._scroll.mount(bubble)
+                    text_bubble = None
+                elif isinstance(ev, ToolCallFinished):
+                    bubble = tool_bubbles.get(ev.run_id)
+                    if bubble is not None:
+                        bubble.set_result(ev.result)
+                self._scroll.scroll_end(animate=False)
         except asyncio.CancelledError:
             pass
         except Exception as exc:  # noqa: BLE001 - top-level guard so agent errors surface instead of crashing the task
