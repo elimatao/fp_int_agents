@@ -8,10 +8,11 @@ from textual.widget import Widget
 
 from fp_int_agents.agents.agent_caller import call_agent
 from fp_int_agents.config import QueryConfig
-from fp_int_agents.storage.db import get_project
+from fp_int_agents.storage.db import get_project, update_thread_tools
 
 from .input_bar import InputBar
 from .message_bubble import MessageBubble
+from .tool_selector import ToolSelector
 
 if TYPE_CHECKING:
     from fp_int_agents.app import FPIntAgentsApp
@@ -45,7 +46,7 @@ class Chat(Widget):
     def compose(self) -> ComposeResult:
         with VerticalScroll() as scroll:
             self._scroll = scroll
-        yield InputBar()
+        yield InputBar(self._query_config.active_tools)
 
     async def on_mount(self) -> None:
         snapshot = await self._fp_app.db.checkpointer.aget(
@@ -59,6 +60,24 @@ class Chat(Widget):
     def on_unmount(self) -> None:
         if self._agent_task and not self._agent_task.done():
             self._agent_task.cancel()
+
+    async def on_input_bar_tools_requested(
+        self, event: InputBar.ToolsRequested
+    ) -> None:
+        async def _on_dismiss(tools: list[str] | None) -> None:
+            if tools is None:
+                return
+            self._query_config = self._query_config.model_copy(
+                update={"active_tools": tools}
+            )
+            await update_thread_tools(
+                self._fp_app.db.conn, self._query_config.thread_id, tools
+            )
+            self.query_one(InputBar).update_tools(tools)
+
+        await self.app.push_screen(
+            ToolSelector(event.active_tools, event.all_tools), _on_dismiss
+        )
 
     async def on_input_bar_submitted(self, event: InputBar.Submitted) -> None:
         project = await get_project(self._fp_app.db.conn, self._query_config.project_id)
@@ -87,6 +106,8 @@ class Chat(Widget):
                     self._scroll.scroll_end(animate=False)
         except asyncio.CancelledError:
             pass
+        except Exception as exc:  # noqa: BLE001 - top-level guard so agent errors surface instead of crashing the task
+            self.notify(str(exc), title="Agent error", severity="error", timeout=10)
 
     async def _append(self, message: HumanMessage | AIMessage) -> None:
         bubble = MessageBubble(message)

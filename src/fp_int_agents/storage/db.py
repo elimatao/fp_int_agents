@@ -23,10 +23,11 @@ CREATE TABLE IF NOT EXISTS projects (
 );
 
 CREATE TABLE IF NOT EXISTS threads (
-    id         TEXT PRIMARY KEY,
-    project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-    title      TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    id           TEXT PRIMARY KEY,
+    project_id   TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    title        TEXT,
+    active_tools TEXT NOT NULL DEFAULT '[]',
+    created_at   TEXT NOT NULL DEFAULT (datetime('now'))
 );
 """
 
@@ -44,7 +45,9 @@ def _row_to_project(row: tuple, cols: list[str]) -> Project:
 
 
 def _row_to_thread(row: tuple, cols: list[str]) -> Thread:
-    return Thread.model_validate(dict(zip(cols, row)))
+    d = dict(zip(cols, row))
+    d["active_tools"] = json.loads(d["active_tools"])
+    return Thread.model_validate(d)
 
 
 def _cols(cursor: aiosqlite.Cursor) -> list[str]:
@@ -158,8 +161,8 @@ async def create_thread(
 ) -> Thread:
     thread = Thread(project_id=project_id, title=title)
     await conn.execute(
-        "INSERT INTO threads (id, project_id, title) VALUES (?, ?, ?)",
-        (thread.id, thread.project_id, thread.title),
+        "INSERT INTO threads (id, project_id, title, active_tools) VALUES (?, ?, ?, ?)",
+        (thread.id, thread.project_id, thread.title, json.dumps(thread.active_tools)),
     )
     await conn.commit()
     return thread
@@ -167,11 +170,21 @@ async def create_thread(
 
 async def list_threads(conn: aiosqlite.Connection, project_id: str) -> list[Thread]:
     async with conn.execute(
-        "SELECT id, project_id, title, created_at FROM threads WHERE project_id = ? ORDER BY created_at DESC",
+        "SELECT id, project_id, title, active_tools, created_at FROM threads WHERE project_id = ? ORDER BY created_at DESC",
         (project_id,),
     ) as cursor:
         cols = _cols(cursor)
         return [_row_to_thread(row, cols) async for row in cursor]
+
+
+async def update_thread_tools(
+    conn: aiosqlite.Connection, thread_id: str, active_tools: list[str]
+) -> None:
+    await conn.execute(
+        "UPDATE threads SET active_tools = ? WHERE id = ?",
+        (json.dumps(active_tools), thread_id),
+    )
+    await conn.commit()
 
 
 async def delete_thread(

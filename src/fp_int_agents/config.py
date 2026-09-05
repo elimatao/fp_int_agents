@@ -30,6 +30,7 @@ class Thread(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     project_id: str
     title: str | None = None
+    active_tools: list[str] = []
     created_at: str | None = None
 
 

@@ -71,6 +71,7 @@ class FPIntAgentsApp(App):
             thread_id=first_thread.id,
             project_id=first_project.id,
             chat_model=first_project.chat_model,
+            active_tools=first_thread.active_tools,
         )
         await self.query_one("#main-layout", Horizontal).mount(Chat(query_config))
         sidebar.set_active_thread(first_project, first_thread)
@@ -81,6 +82,7 @@ class FPIntAgentsApp(App):
                 thread_id=thread.id,
                 project_id=project.id,
                 chat_model=project.chat_model,
+                active_tools=thread.active_tools,
             )
         )
         self.query_one(ProjectSidebar).set_active_thread(project, thread)

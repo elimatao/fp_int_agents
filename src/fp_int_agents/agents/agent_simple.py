@@ -2,7 +2,7 @@ import operator
 from typing import Annotated, Literal
 
 from langchain_core.language_models import LanguageModelInput
-from langchain_core.messages import AIMessage, AnyMessage, SystemMessage, ToolMessage
+from langchain_core.messages import AIMessage, AnyMessage, SystemMessage
 from langchain_core.runnables import Runnable, RunnableConfig
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.graph import END, START, StateGraph
@@ -12,7 +12,7 @@ from typing_extensions import TypedDict
 
 from fp_int_agents.config import Project, QueryConfig
 from fp_int_agents.llm.client import get_chat_model
-from fp_int_agents.tools.registry import get_tool, get_tools
+from fp_int_agents.tools.registry import dispatch, get_tools
 
 
 class SimpleAgentInitConfig(BaseModel):
@@ -54,14 +54,9 @@ def _llm_call(state: AgentState, config: RunnableConfig) -> AgentState:
     }
 
 
-def _tool_node(state: AgentState, config: RunnableConfig) -> AgentState:
-    results = [
-        ToolMessage(
-            content=get_tool(tc["name"]).invoke(tc["args"]), tool_call_id=tc["id"]
-        )
-        for tc in state["messages"][-1].tool_calls
-    ]
-    return {"messages": results}
+async def _tool_node(state: AgentState, config: RunnableConfig) -> AgentState:
+    tool_calls = state["messages"][-1].tool_calls
+    return {"messages": await dispatch(tool_calls)}
 
 
 def _should_continue(state: AgentState) -> Literal["tool_node", "__end__"]:
