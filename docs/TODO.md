@@ -1,4 +1,8 @@
 # ToDos 
+## Presentation
+- think of feature showcase order
+- explain architecture with diagrams
+
 ## Submission
 - record video
     - demonstrate required and elective implemented features
@@ -17,39 +21,41 @@
 
 
 ## Features
+### Legend
 - done
 
 - to do
+
 ### Mandatory (Required)
 - Chat
     - User Input
         - basic user input
+        - select tools
 
         - switch llm model
-        - select tools
         - file / folder upload
         - interrupt generation
         - multiline user input
         - message queueing?
+        - keyboard shortcuts
     - Conversation History
         - Scrolling
         - Scroll stop on long generations
-        
         - history block visualization / collapsing? e.g. toolcalls, 
+        
 - Conversation Management
-    - 
-    
     - switch
     - create
     - continue
     - remove
-- Project Management
-    - 
     
-    - create / configure
+- Project Management
+    - create
+    - delete project
+
+    - configure
     - showcase agent-binding (for type of conversation )
     - update mutable attributes
-    - delete project
 
 - Memory / GraphRAG mechanism
     - 

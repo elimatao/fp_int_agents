@@ -5,7 +5,14 @@ from pathlib import Path
 
 from langchain_core.messages import ToolMessage
 from langchain_core.tools import BaseTool, StructuredTool
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, create_model, field_validator
+
+_TYPE_MAP: dict[str, type] = {
+    "string": str,
+    "integer": int,
+    "number": float,
+    "boolean": bool,
+}
 
 _REGISTRY: dict[str, BaseTool] = {}
 
@@ -55,10 +62,24 @@ def _make_shell_tool(definition: JsonToolDefinition) -> BaseTool:
             return f"Error (exit {result.returncode}): {result.stderr.strip()}"
         return result.stdout.strip()
 
+    fields = {
+        name: (
+            _TYPE_MAP.get(param.type, str)
+            if name in definition.parameters.required
+            else _TYPE_MAP.get(param.type, str) | None,
+            Field(description=param.description)
+            if name in definition.parameters.required
+            else Field(default=None, description=param.description),
+        )
+        for name, param in definition.parameters.properties.items()
+    }
+    args_schema = create_model(f"{definition.name}_args", **fields)  # type: ignore[call-overload]
+
     return StructuredTool.from_function(
         func=_run,
         name=definition.name,
         description=definition.description,
+        args_schema=args_schema,
     )
 
 
