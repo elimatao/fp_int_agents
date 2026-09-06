@@ -5,9 +5,11 @@ from langgraph.checkpoint.base import BaseCheckpointSaver
 from pydantic import BaseModel
 
 from fp_int_agents.agents.registry import AGENTS
-from fp_int_agents.config import Project, QueryConfig
+from fp_int_agents.config import LlmConfig, Project, QueryConfig
 
 RESULT_PREVIEW_CHARS = 200
+
+_DEFAULT_LLM_CONFIG = LlmConfig()
 
 
 class TextToken(BaseModel):
@@ -48,8 +50,9 @@ async def call_agent(
     query_config: QueryConfig,
     message: HumanMessage,
     checkpointer: BaseCheckpointSaver,
+    llm_config: LlmConfig = _DEFAULT_LLM_CONFIG,
 ) -> AsyncIterator[StreamEvent]:
-    agent = AGENTS[project.agent](project, checkpointer)
+    agent = AGENTS[project.agent](project, checkpointer, llm_config)
     runnable_config = query_config.to_runnable_config()
     async for event in agent.astream_events(
         {"messages": [message]}, runnable_config, version="v2"

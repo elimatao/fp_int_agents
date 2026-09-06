@@ -83,14 +83,14 @@ class _ProjectRow(Widget):
 
         def __init__(self, project: "Project", **kwargs) -> None:
             super().__init__(**kwargs)
-            self._project = project
+            self._project_id = project.id
 
         def render(self) -> str:
             return "✕"
 
         def on_click(self, event: Click) -> None:
             event.stop()
-            self.post_message(ProjectSidebar.DeleteProject(self._project))
+            self.post_message(ProjectSidebar.DeleteProject(self._project_id))
 
     def __init__(self, project: Project, threads: list[Thread]) -> None:
         super().__init__(id=f"row-{project.id}")
@@ -142,30 +142,26 @@ class ProjectSidebar(Widget):
         """User clicked '+ New Project'."""
 
     class NewThread(Message):
-        def __init__(self, project: Project) -> None:
+        def __init__(self, project_id: str) -> None:
             super().__init__()
-            self.project = project
+            self.project_id = project_id
 
     class ThreadSelected(Message):
-        def __init__(self, thread: Thread, project: Project) -> None:
+        def __init__(self, thread_id: str, project_id: str) -> None:
             super().__init__()
-            self.thread = thread
-            self.project = project
+            self.thread_id = thread_id
+            self.project_id = project_id
 
     class DeleteThread(Message):
-        def __init__(self, thread: Thread, project: Project) -> None:
+        def __init__(self, thread_id: str, project_id: str) -> None:
             super().__init__()
-            self.thread = thread
-            self.project = project
+            self.thread_id = thread_id
+            self.project_id = project_id
 
     class DeleteProject(Message):
-        def __init__(self, project: Project) -> None:
+        def __init__(self, project_id: str) -> None:
             super().__init__()
-            self.project = project
-
-    def __init__(self) -> None:
-        super().__init__()
-        self._projects: list[Project] = []
+            self.project_id = project_id
 
     def compose(self) -> ComposeResult:
         yield Button("+ New Project", id="new-project-btn", variant="primary")
@@ -174,13 +170,11 @@ class ProjectSidebar(Widget):
     async def populate(self, data: list[tuple[Project, list[Thread]]]) -> None:
         scroll = self.query_one("#project-scroll", VerticalScroll)
         for project, threads in data:
-            self._projects.append(project)
             await scroll.mount(_ProjectRow(project, threads))
 
     async def add_project(
         self, project: Project, threads: list[Thread] | None = None
     ) -> None:
-        self._projects.insert(0, project)
         scroll = self.query_one("#project-scroll", VerticalScroll)
         await scroll.mount(_ProjectRow(project, threads or []), before=0)
 
@@ -191,16 +185,15 @@ class ProjectSidebar(Widget):
         await self.query_one(f"#tl-{project_id}", ThreadList).remove_thread(thread_id)
 
     async def remove_project(self, project_id: str) -> None:
-        self._projects = [p for p in self._projects if p.id != project_id]
         await self.query_one(f"#row-{project_id}", _ProjectRow).remove()
 
-    def set_active_thread(self, project: Project, thread: Thread) -> None:
+    def set_active_thread(self, project_id: str, thread_id: str) -> None:
         for row in self.query(_ProjectRow):
-            is_active = row._project.id == project.id
+            is_active = row._project.id == project_id
             row.set_class(is_active, "--active")
             if is_active:
                 row.expand()
-                row.thread_list.set_active(thread.id)
+                row.thread_list.set_active(thread_id)
             else:
                 row.thread_list.set_active("")
 
@@ -211,12 +204,12 @@ class ProjectSidebar(Widget):
 
     def on_thread_list_new_thread(self, event: ThreadList.NewThread) -> None:
         event.stop()
-        self.post_message(self.NewThread(event.project))
+        self.post_message(self.NewThread(event.project_id))
 
     def on_thread_list_thread_selected(self, event: ThreadList.ThreadSelected) -> None:
         event.stop()
-        self.post_message(self.ThreadSelected(event.thread, event.project))
+        self.post_message(self.ThreadSelected(event.thread_id, event.project_id))
 
     def on_thread_list_delete_thread(self, event: ThreadList.DeleteThread) -> None:
         event.stop()
-        self.post_message(self.DeleteThread(event.thread, event.project))
+        self.post_message(self.DeleteThread(event.thread_id, event.project_id))

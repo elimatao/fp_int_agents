@@ -63,7 +63,7 @@ async def test_thread_list_new_chat_posts_new_thread() -> None:
     async with App_().run_test() as pilot:
         await pilot.click("#new-thread-btn")
         assert len(received) == 1
-        assert received[0].project.id == p.id
+        assert received[0].project_id == p.id
 
 
 @pytest.mark.asyncio
@@ -84,8 +84,8 @@ async def test_thread_list_item_click_posts_thread_selected() -> None:
     async with App_().run_test() as pilot:
         await pilot.click(f"#thread-{t.id}")
         assert len(received) == 1
-        assert received[0].thread.id == t.id
-        assert received[0].project.id == p.id
+        assert received[0].thread_id == t.id
+        assert received[0].project_id == p.id
 
 
 @pytest.mark.asyncio
@@ -199,8 +199,8 @@ async def test_thread_list_delete_posts_message() -> None:
     async with App_().run_test() as pilot:
         await pilot.click(f"#del-thread-{t.id}")
         assert len(received) == 1
-        assert received[0].thread.id == t.id
-        assert received[0].project.id == p.id
+        assert received[0].thread_id == t.id
+        assert received[0].project_id == p.id
 
 
 @pytest.mark.asyncio
@@ -247,7 +247,7 @@ async def test_sidebar_delete_project_posts_message() -> None:
         await pilot.pause()
         await pilot.click(f"#del-project-{p.id}")
         assert len(received) == 1
-        assert received[0].project.id == p.id
+        assert received[0].project_id == p.id
 
 
 @pytest.mark.asyncio

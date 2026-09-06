@@ -168,6 +168,17 @@ async def create_thread(
     return thread
 
 
+async def get_thread(conn: aiosqlite.Connection, thread_id: str) -> Thread | None:
+    async with conn.execute(
+        "SELECT id, project_id, title, active_tools, created_at FROM threads WHERE id = ?",
+        (thread_id,),
+    ) as cursor:
+        row = await cursor.fetchone()
+        if row is None:
+            return None
+        return _row_to_thread(row, _cols(cursor))
+
+
 async def list_threads(conn: aiosqlite.Connection, project_id: str) -> list[Thread]:
     async with conn.execute(
         "SELECT id, project_id, title, active_tools, created_at FROM threads WHERE project_id = ? ORDER BY created_at DESC",

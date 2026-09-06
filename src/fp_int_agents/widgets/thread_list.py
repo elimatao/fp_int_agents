@@ -37,21 +37,21 @@ class ThreadList(Widget):
     """
 
     class NewThread(Message):
-        def __init__(self, project: Project) -> None:
+        def __init__(self, project_id: str) -> None:
             super().__init__()
-            self.project = project
+            self.project_id = project_id
 
     class ThreadSelected(Message):
-        def __init__(self, thread: Thread, project: Project) -> None:
+        def __init__(self, thread_id: str, project_id: str) -> None:
             super().__init__()
-            self.thread = thread
-            self.project = project
+            self.thread_id = thread_id
+            self.project_id = project_id
 
     class DeleteThread(Message):
-        def __init__(self, thread: Thread, project: Project) -> None:
+        def __init__(self, thread_id: str, project_id: str) -> None:
             super().__init__()
-            self.thread = thread
-            self.project = project
+            self.thread_id = thread_id
+            self.project_id = project_id
 
     class _DeleteLabel(Widget):
         DEFAULT_CSS = """
@@ -59,19 +59,17 @@ class ThreadList(Widget):
         _DeleteLabel:hover { text-style: bold; }
         """
 
-        def __init__(self, thread: "Thread", tl: "ThreadList", **kwargs) -> None:
+        def __init__(self, thread_id: str, project_id: str, **kwargs) -> None:
             super().__init__(**kwargs)
-            self._thread = thread
-            self._tl = tl
+            self._del_thread_id = thread_id
+            self._del_project_id = project_id
 
         def render(self) -> str:
             return "✕"
 
         def on_click(self, event: Click) -> None:
             event.stop()
-            self._tl.post_message(
-                ThreadList.DeleteThread(self._thread, self._tl._project)
-            )
+            self.post_message(ThreadList.DeleteThread(self._del_thread_id, self._del_project_id))
 
     def __init__(self, project: Project, threads: list[Thread], **kwargs) -> None:
         super().__init__(**kwargs)
@@ -80,7 +78,11 @@ class ThreadList(Widget):
 
     def _make_item(self, thread: Thread) -> ListItem:
         return ListItem(
-            self._DeleteLabel(thread, self, id=f"del-thread-{thread.id}"),
+            self._DeleteLabel(
+                thread_id=thread.id,
+                project_id=self._project.id,
+                id=f"del-thread-{thread.id}",
+            ),
             Label(thread.title or "Untitled"),
             id=f"thread-{thread.id}",
         )
@@ -116,7 +118,7 @@ class ThreadList(Widget):
     def on_button_pressed(self, event: Button.Pressed) -> None:
         event.stop()
         if event.button.id == "new-thread-btn":
-            self.post_message(self.NewThread(self._project))
+            self.post_message(self.NewThread(self._project.id))
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         event.stop()
@@ -124,6 +126,4 @@ class ThreadList(Widget):
         if not item_id.startswith("thread-"):
             return
         thread_id = item_id.removeprefix("thread-")
-        thread = next((t for t in self._threads if t.id == thread_id), None)
-        if thread:
-            self.post_message(self.ThreadSelected(thread, self._project))
+        self.post_message(self.ThreadSelected(thread_id, self._project.id))

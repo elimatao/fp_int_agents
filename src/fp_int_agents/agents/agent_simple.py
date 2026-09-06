@@ -10,7 +10,7 @@ from langgraph.graph.state import CompiledStateGraph
 from pydantic import BaseModel
 from typing_extensions import TypedDict
 
-from fp_int_agents.config import Project, QueryConfig
+from fp_int_agents.config import LlmConfig, Project, QueryConfig
 from fp_int_agents.llm.client import get_chat_model
 from fp_int_agents.tools.registry import dispatch, get_tools
 
@@ -27,48 +27,44 @@ class AgentState(TypedDict):
     messages: Annotated[list[AnyMessage], operator.add]
 
 
-def _build_model(config: RunnableConfig) -> Runnable[LanguageModelInput, AIMessage]:
-    """Instantiate the chat model and bind any active tools from runtime config."""
-    from fp_int_agents.config import load_config
-
-    qc = QueryConfig.from_runnable_config(config)
-    app_cfg = load_config()
-    tools = get_tools(qc.active_tools)
-    model = get_chat_model(
-        base_url=app_cfg.llm.base_url, model=qc.chat_model, api_key=app_cfg.llm.api_key
-    )
-    if tools:
-        model = model.bind_tools(tools)
-    return model
-
-
-def _llm_call(state: AgentState, config: RunnableConfig) -> AgentState:
-    model = _build_model(config)
-    return {
-        "messages": [
-            model.invoke(
-                [SystemMessage(content="You are a helpful assistant.")]
-                + state["messages"]
-            )
-        ]
-    }
-
-
-async def _tool_node(state: AgentState, config: RunnableConfig) -> AgentState:
-    tool_calls = state["messages"][-1].tool_calls
-    return {"messages": await dispatch(tool_calls)}
-
-
-def _should_continue(state: AgentState) -> Literal["tool_node", "__end__"]:
-    return "tool_node" if state["messages"][-1].tool_calls else END
+_DEFAULT_LLM_CONFIG = LlmConfig()
 
 
 def build_agent(
     project: Project,
     checkpointer: BaseCheckpointSaver | None = None,
+    llm_config: LlmConfig = _DEFAULT_LLM_CONFIG,
 ) -> CompiledStateGraph:
     SimpleAgentInitConfig.model_validate(project.init_config)
     SimpleAgentConfig.model_validate(project.config)
+
+    def _build_model(config: RunnableConfig) -> Runnable[LanguageModelInput, AIMessage]:
+        qc = QueryConfig.from_runnable_config(config)
+        tools = get_tools(qc.active_tools)
+        model = get_chat_model(
+            base_url=llm_config.base_url, model=qc.chat_model, api_key=llm_config.api_key
+        )
+        if tools:
+            model = model.bind_tools(tools)
+        return model
+
+    def _llm_call(state: AgentState, config: RunnableConfig) -> AgentState:
+        return {
+            "messages": [
+                _build_model(config).invoke(
+                    [SystemMessage(content="You are a helpful assistant.")]
+                    + state["messages"]
+                )
+            ]
+        }
+
+    async def _tool_node(state: AgentState, config: RunnableConfig) -> AgentState:
+        tool_calls = state["messages"][-1].tool_calls
+        return {"messages": await dispatch(tool_calls)}
+
+    def _should_continue(state: AgentState) -> Literal["tool_node", "__end__"]:
+        return "tool_node" if state["messages"][-1].tool_calls else END
+
     builder = StateGraph(AgentState)
     builder.add_node("llm_call", _llm_call)
     builder.add_node("tool_node", _tool_node)

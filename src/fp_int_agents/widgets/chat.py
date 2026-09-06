@@ -45,6 +45,10 @@ class Chat(Widget):
         self._agent_task: asyncio.Task | None = None
 
     @property
+    def query_config(self) -> QueryConfig:
+        return self._query_config
+
+    @property
     def _fp_app(self) -> "FPIntAgentsApp":
         from fp_int_agents.app import FPIntAgentsApp
 
@@ -121,6 +125,7 @@ class Chat(Widget):
                 query_config=self._query_config,
                 message=HumanMessage(content=text),
                 checkpointer=self._fp_app.db.checkpointer,
+                llm_config=self._fp_app.config.llm,
             ):
                 if isinstance(ev, TextToken):
                     if text_bubble is None:
