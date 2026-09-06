@@ -47,6 +47,7 @@ async def test_call_agent_emits_tool_events(project_config, memory_checkpointer)
             content="Please ping. Call the ping tool and reply with only its one-word response."
         ),
         checkpointer=memory_checkpointer,
+        llm_config=app_cfg.llm,
     ):
         if isinstance(event, ToolCallStarted):
             started.append(event)

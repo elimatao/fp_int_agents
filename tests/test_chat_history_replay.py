@@ -6,7 +6,7 @@ from langchain_core.messages import HumanMessage
 from langchain_core.tools import tool
 from textual.app import App, ComposeResult
 
-from fp_int_agents.agents.agent_simple import build_agent
+from fp_int_agents.agents.conv_agent_simple import build_agent
 from fp_int_agents.config import Project, QueryConfig, load_config
 from fp_int_agents.storage.db import open_db
 from fp_int_agents.tools.registry import register
@@ -41,7 +41,7 @@ async def test_history_replay_renders_tool_call_bubble(tmp_path):
 
     db_path = str(tmp_path / "app.db")
     async with open_db(db_path) as db:
-        agent = build_agent(project, checkpointer=db.checkpointer)
+        agent = build_agent(project, checkpointer=db.checkpointer, llm_config=app_cfg.llm)
         await agent.ainvoke(
             {
                 "messages": [

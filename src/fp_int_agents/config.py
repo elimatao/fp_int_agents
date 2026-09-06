@@ -19,6 +19,7 @@ class Project(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
     agent: str = "simple"
+    mem_agent: str | None = None  # None = memory disabled for this project
     chat_model: str
     system_prompt: str | None = None
     init_config: dict = {}  # Agent-Specific, Immutable
@@ -32,6 +33,8 @@ class Thread(BaseModel):
     title: str | None = None
     active_tools: list[str] = []
     chat_model: str | None = None  # None = use project default
+    summary: str | None = None
+    summary_message_count: int | None = None
     created_at: str | None = None
 
 

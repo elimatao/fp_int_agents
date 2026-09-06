@@ -1,10 +1,10 @@
 from collections.abc import AsyncIterator
 
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import AnyMessage, HumanMessage
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from pydantic import BaseModel
 
-from fp_int_agents.agents.registry import AGENTS
+from fp_int_agents.agents.registry import CONVERSATIONAL_AGENTS, MEMORY_AGENTS
 from fp_int_agents.config import LlmConfig, Project, QueryConfig
 
 RESULT_PREVIEW_CHARS = 200
@@ -52,7 +52,7 @@ async def call_agent(
     checkpointer: BaseCheckpointSaver,
     llm_config: LlmConfig = _DEFAULT_LLM_CONFIG,
 ) -> AsyncIterator[StreamEvent]:
-    agent = AGENTS[project.agent](project, checkpointer, llm_config)
+    agent = CONVERSATIONAL_AGENTS[project.agent](project, checkpointer, llm_config)
     runnable_config = query_config.to_runnable_config()
     async for event in agent.astream_events(
         {"messages": [message]}, runnable_config, version="v2"
@@ -74,3 +74,18 @@ async def call_agent(
                 name=event["name"],
                 result=preview_result(content),
             )
+
+
+async def summarize_thread(
+    project: Project,
+    query_config: QueryConfig,
+    messages: list[AnyMessage],
+    llm_config: LlmConfig = _DEFAULT_LLM_CONFIG,
+) -> str:
+    """Summarize a thread's messages and return the summary string."""
+    agent = MEMORY_AGENTS[project.mem_agent](project, llm_config)
+    result = await agent.ainvoke(
+        {"messages": messages, "summary": None},
+        query_config.to_runnable_config(),
+    )
+    return result["summary"]

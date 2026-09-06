@@ -5,7 +5,7 @@ from conftest import get_model_id
 from langchain_core.messages import HumanMessage
 from langchain_core.tools import tool
 
-from fp_int_agents.agents.registry import AGENTS
+from fp_int_agents.agents.registry import CONVERSATIONAL_AGENTS
 from fp_int_agents.config import QueryConfig, load_config
 from fp_int_agents.tools.registry import register
 
@@ -28,7 +28,7 @@ async def test_agent_calls_tool_and_returns_response(project_config):
     app_cfg = load_config()
     model_id = await get_model_id(app_cfg)
 
-    agent = AGENTS["simple"](project_config)
+    agent = CONVERSATIONAL_AGENTS["simple"](project_config, None, app_cfg.llm)
 
     stream = await agent.astream_events(
         {

@@ -4,6 +4,7 @@ from textual.app import App, ComposeResult
 from textual.containers import Horizontal
 from textual.widgets import Footer, Header
 
+from .agents.agent_caller import summarize_thread
 from .config import AppConfig, Project, QueryConfig, Thread
 from .constants import APP_NAME
 from .storage.db import (
@@ -16,6 +17,7 @@ from .storage.db import (
     get_thread,
     list_projects,
     list_threads,
+    update_thread_summary,
 )
 from .widgets.chat import Chat
 from .widgets.project_sidebar import ProjectSidebar
@@ -50,7 +52,10 @@ class FPIntAgentsApp(App):
         projects = await list_projects(self.db.conn)
         if not projects:
             project = await create_project(
-                self.db.conn, "Default Project", self.config.chat_model
+                self.db.conn,
+                "Default Project",
+                self.config.chat_model,
+                mem_agent="simple",
             )
             projects = [project]
 
@@ -95,10 +100,46 @@ class FPIntAgentsApp(App):
         if project and thread:
             await self._activate_thread(project, thread)
 
+    async def action_quit(self) -> None:
+        try:
+            chat = self.query_one(Chat)
+            await self._summarize_on_leave(chat.query_config)
+        except Exception as exc:  # noqa: BLE001
+            self.log.warning(f"Summarization on quit failed: {exc}")
+        await super().action_quit()
+
     async def _swap_chat(self, query_config: QueryConfig) -> None:
         layout = self.query_one("#main-layout", Horizontal)
-        await layout.query_one(Chat).remove()
+        outgoing = layout.query_one(Chat)
+        asyncio.create_task(self._summarize_on_leave(outgoing.query_config))
+        await outgoing.remove()
         await layout.mount(Chat(query_config))
+
+    async def _summarize_on_leave(self, query_config: QueryConfig) -> None:
+        thread, snapshot = await asyncio.gather(
+            get_thread(self.db.conn, query_config.thread_id),
+            self.db.checkpointer.aget(query_config.to_runnable_config()),
+        )
+        if not snapshot:
+            return
+        messages = snapshot["channel_values"].get("messages", [])
+        if not messages:
+            return
+        if thread and thread.summary_message_count == len(messages):
+            return
+        project = await get_project(self.db.conn, query_config.project_id)
+        if project is None or not project.mem_agent:
+            return
+        try:
+            summary = await summarize_thread(
+                project=project,
+                query_config=query_config,
+                messages=messages,
+                llm_config=self.config.llm,
+            )
+            await update_thread_summary(self.db.conn, query_config.thread_id, summary, len(messages))
+        except Exception as exc:  # noqa: BLE001 - summarization is best-effort
+            self.log.warning(f"Thread summarization failed: {exc}")
 
     async def on_project_sidebar_thread_selected(
         self, event: ProjectSidebar.ThreadSelected

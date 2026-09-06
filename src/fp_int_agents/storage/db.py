@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS projects (
     id            TEXT PRIMARY KEY,
     name          TEXT NOT NULL,
     agent         TEXT NOT NULL DEFAULT 'simple',
+    mem_agent     TEXT,
     chat_model    TEXT NOT NULL,
     system_prompt TEXT,
     init_config   TEXT NOT NULL DEFAULT '{}',
@@ -23,12 +24,14 @@ CREATE TABLE IF NOT EXISTS projects (
 );
 
 CREATE TABLE IF NOT EXISTS threads (
-    id           TEXT PRIMARY KEY,
-    project_id   TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-    title        TEXT,
-    active_tools TEXT NOT NULL DEFAULT '[]',
-    chat_model   TEXT,
-    created_at   TEXT NOT NULL DEFAULT (datetime('now'))
+    id                    TEXT PRIMARY KEY,
+    project_id            TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    title                 TEXT,
+    active_tools          TEXT NOT NULL DEFAULT '[]',
+    chat_model            TEXT,
+    summary               TEXT,
+    summary_message_count INTEGER,
+    created_at            TEXT NOT NULL DEFAULT (datetime('now'))
 );
 """
 
@@ -81,6 +84,7 @@ async def create_project(
     chat_model: str,
     *,
     agent: str = "simple",
+    mem_agent: str | None = None,
     system_prompt: str | None = None,
     init_config: dict | None = None,
     config: dict | None = None,
@@ -89,16 +93,18 @@ async def create_project(
         name=name,
         chat_model=chat_model,
         agent=agent,
+        mem_agent=mem_agent,
         system_prompt=system_prompt,
         init_config=init_config or {},
         config=config or {},
     )
     await conn.execute(
-        "INSERT INTO projects (id, name, agent, chat_model, system_prompt, init_config, config) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO projects (id, name, agent, mem_agent, chat_model, system_prompt, init_config, config) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
         (
             project.id,
             project.name,
             project.agent,
+            project.mem_agent,
             project.chat_model,
             project.system_prompt,
             json.dumps(project.init_config),
@@ -111,7 +117,7 @@ async def create_project(
 
 async def get_project(conn: aiosqlite.Connection, project_id: str) -> Project | None:
     async with conn.execute(
-        "SELECT id, name, agent, chat_model, system_prompt, init_config, config, created_at FROM projects WHERE id = ?",
+        "SELECT id, name, agent, mem_agent, chat_model, system_prompt, init_config, config, created_at FROM projects WHERE id = ?",
         (project_id,),
     ) as cursor:
         row = await cursor.fetchone()
@@ -122,7 +128,7 @@ async def get_project(conn: aiosqlite.Connection, project_id: str) -> Project | 
 
 async def list_projects(conn: aiosqlite.Connection) -> list[Project]:
     async with conn.execute(
-        "SELECT id, name, agent, chat_model, system_prompt, init_config, config, created_at FROM projects ORDER BY created_at DESC"
+        "SELECT id, name, agent, mem_agent, chat_model, system_prompt, init_config, config, created_at FROM projects ORDER BY created_at DESC"
     ) as cursor:
         cols = _cols(cursor)
         return [_row_to_project(row, cols) async for row in cursor]
@@ -171,7 +177,7 @@ async def create_thread(
 
 async def get_thread(conn: aiosqlite.Connection, thread_id: str) -> Thread | None:
     async with conn.execute(
-        "SELECT id, project_id, title, active_tools, chat_model, created_at FROM threads WHERE id = ?",
+        "SELECT id, project_id, title, active_tools, chat_model, summary, summary_message_count, created_at FROM threads WHERE id = ?",
         (thread_id,),
     ) as cursor:
         row = await cursor.fetchone()
@@ -182,7 +188,7 @@ async def get_thread(conn: aiosqlite.Connection, thread_id: str) -> Thread | Non
 
 async def list_threads(conn: aiosqlite.Connection, project_id: str) -> list[Thread]:
     async with conn.execute(
-        "SELECT id, project_id, title, active_tools, chat_model, created_at FROM threads WHERE project_id = ? ORDER BY created_at DESC",
+        "SELECT id, project_id, title, active_tools, chat_model, summary, summary_message_count, created_at FROM threads WHERE project_id = ? ORDER BY created_at DESC",
         (project_id,),
     ) as cursor:
         cols = _cols(cursor)
@@ -208,6 +214,16 @@ async def update_thread_settings(
     await conn.execute(
         "UPDATE threads SET active_tools = ?, chat_model = ? WHERE id = ?",
         (json.dumps(active_tools), chat_model, thread_id),
+    )
+    await conn.commit()
+
+
+async def update_thread_summary(
+    conn: aiosqlite.Connection, thread_id: str, summary: str, message_count: int
+) -> None:
+    await conn.execute(
+        "UPDATE threads SET summary = ?, summary_message_count = ? WHERE id = ?",
+        (summary, message_count, thread_id),
     )
     await conn.commit()
 
