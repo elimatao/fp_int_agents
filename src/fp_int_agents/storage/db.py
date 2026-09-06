@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS threads (
     project_id   TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     title        TEXT,
     active_tools TEXT NOT NULL DEFAULT '[]',
+    chat_model   TEXT,
     created_at   TEXT NOT NULL DEFAULT (datetime('now'))
 );
 """
@@ -161,8 +162,8 @@ async def create_thread(
 ) -> Thread:
     thread = Thread(project_id=project_id, title=title)
     await conn.execute(
-        "INSERT INTO threads (id, project_id, title, active_tools) VALUES (?, ?, ?, ?)",
-        (thread.id, thread.project_id, thread.title, json.dumps(thread.active_tools)),
+        "INSERT INTO threads (id, project_id, title, active_tools, chat_model) VALUES (?, ?, ?, ?, ?)",
+        (thread.id, thread.project_id, thread.title, json.dumps(thread.active_tools), thread.chat_model),
     )
     await conn.commit()
     return thread
@@ -170,7 +171,7 @@ async def create_thread(
 
 async def get_thread(conn: aiosqlite.Connection, thread_id: str) -> Thread | None:
     async with conn.execute(
-        "SELECT id, project_id, title, active_tools, created_at FROM threads WHERE id = ?",
+        "SELECT id, project_id, title, active_tools, chat_model, created_at FROM threads WHERE id = ?",
         (thread_id,),
     ) as cursor:
         row = await cursor.fetchone()
@@ -181,7 +182,7 @@ async def get_thread(conn: aiosqlite.Connection, thread_id: str) -> Thread | Non
 
 async def list_threads(conn: aiosqlite.Connection, project_id: str) -> list[Thread]:
     async with conn.execute(
-        "SELECT id, project_id, title, active_tools, created_at FROM threads WHERE project_id = ? ORDER BY created_at DESC",
+        "SELECT id, project_id, title, active_tools, chat_model, created_at FROM threads WHERE project_id = ? ORDER BY created_at DESC",
         (project_id,),
     ) as cursor:
         cols = _cols(cursor)
@@ -194,6 +195,19 @@ async def update_thread_tools(
     await conn.execute(
         "UPDATE threads SET active_tools = ? WHERE id = ?",
         (json.dumps(active_tools), thread_id),
+    )
+    await conn.commit()
+
+
+async def update_thread_settings(
+    conn: aiosqlite.Connection,
+    thread_id: str,
+    active_tools: list[str],
+    chat_model: str | None,
+) -> None:
+    await conn.execute(
+        "UPDATE threads SET active_tools = ?, chat_model = ? WHERE id = ?",
+        (json.dumps(active_tools), chat_model, thread_id),
     )
     await conn.commit()
 

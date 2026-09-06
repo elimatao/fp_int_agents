@@ -72,7 +72,7 @@ class FPIntAgentsApp(App):
         query_config = QueryConfig(
             thread_id=first_thread.id,
             project_id=first_project.id,
-            chat_model=first_project.chat_model,
+            chat_model=first_thread.chat_model or first_project.chat_model,
             active_tools=first_thread.active_tools,
         )
         await self.query_one("#main-layout", Horizontal).mount(Chat(query_config))
@@ -83,7 +83,7 @@ class FPIntAgentsApp(App):
             QueryConfig(
                 thread_id=thread.id,
                 project_id=project.id,
-                chat_model=project.chat_model,
+                chat_model=thread.chat_model or project.chat_model,
                 active_tools=thread.active_tools,
             )
         )

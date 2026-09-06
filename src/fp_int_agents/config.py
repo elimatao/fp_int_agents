@@ -31,6 +31,7 @@ class Thread(BaseModel):
     project_id: str
     title: str | None = None
     active_tools: list[str] = []
+    chat_model: str | None = None  # None = use project default
     created_at: str | None = None
 
 

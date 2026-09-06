@@ -31,29 +31,35 @@ class InputBar(Widget):
             super().__init__()
             self.text = text
 
-    class ToolsRequested(Message):
-        """Posted when the user wants to select tools."""
+    class SettingsRequested(Message):
+        """Posted when the user wants to open thread settings."""
 
-        def __init__(self, active_tools: list[str], all_tools: list[str]) -> None:
+        def __init__(
+            self,
+            current_model: str,
+            active_tools: list[str],
+            all_tools: list[str],
+        ) -> None:
             super().__init__()
+            self.current_model = current_model
             self.active_tools = active_tools
             self.all_tools = all_tools
 
-    def __init__(self, active_tools: list[str] | None = None) -> None:
+    def __init__(
+        self, active_tools: list[str] | None = None, chat_model: str = ""
+    ) -> None:
         super().__init__()
         self._active_tools: list[str] = active_tools or []
+        self._chat_model: str = chat_model
 
     def compose(self) -> ComposeResult:
-        yield Button(self._tools_label(), variant="default", id="chat-tools")
+        yield Button("Settings", variant="default", id="chat-settings")
         yield Input(placeholder="Type a message…", id="chat-input")
         yield Button("Send", variant="primary", id="chat-send")
 
-    def update_tools(self, active_tools: list[str]) -> None:
+    def update_settings(self, active_tools: list[str], chat_model: str) -> None:
         self._active_tools = active_tools
-        self.query_one("#chat-tools", Button).label = self._tools_label()
-
-    def _tools_label(self) -> str:
-        return f"Tools ({len(self._active_tools)}/{len(list_tools())})"
+        self._chat_model = chat_model
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
         self._submit(event.value)
@@ -61,10 +67,11 @@ class InputBar(Widget):
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "chat-send":
             self._submit(self.query_one("#chat-input", Input).value)
-        elif event.button.id == "chat-tools":
+        elif event.button.id == "chat-settings":
             refresh()
-            all_tools = list_tools()
-            self.post_message(self.ToolsRequested(self._active_tools, all_tools))
+            self.post_message(
+                self.SettingsRequested(self._chat_model, self._active_tools, list_tools())
+            )
 
     def _submit(self, text: str) -> None:
         text = text.strip()

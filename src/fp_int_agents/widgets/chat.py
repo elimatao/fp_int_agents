@@ -14,12 +14,12 @@ from fp_int_agents.agents.agent_caller import (
     preview_result,
 )
 from fp_int_agents.config import QueryConfig
-from fp_int_agents.storage.db import get_project, update_thread_tools
+from fp_int_agents.storage.db import get_project, update_thread_settings
 
 from .input_bar import InputBar
 from .message_bubble import MessageBubble
+from .settings_modal import SettingsModal, SettingsResult
 from .tool_call_bubble import ToolCallBubble
-from .tool_selector import ToolSelector
 
 if TYPE_CHECKING:
     from fp_int_agents.app import FPIntAgentsApp
@@ -57,7 +57,7 @@ class Chat(Widget):
     def compose(self) -> ComposeResult:
         with VerticalScroll() as scroll:
             self._scroll = scroll
-        yield InputBar(self._query_config.active_tools)
+        yield InputBar(self._query_config.active_tools, self._query_config.chat_model)
 
     async def on_mount(self) -> None:
         snapshot = await self._fp_app.db.checkpointer.aget(
@@ -89,22 +89,45 @@ class Chat(Widget):
         if self._agent_task and not self._agent_task.done():
             self._agent_task.cancel()
 
-    async def on_input_bar_tools_requested(
-        self, event: InputBar.ToolsRequested
+    async def on_input_bar_settings_requested(
+        self, event: InputBar.SettingsRequested
     ) -> None:
-        async def _on_dismiss(tools: list[str] | None) -> None:
-            if tools is None:
+        available_models = [event.current_model]
+        try:
+            from fp_int_agents.llm.models import list_models
+
+            infos = await list_models(self._fp_app.config.llm.base_url, self._fp_app.config.llm.api_key)
+            fetched = [m.id for m in infos]
+            if fetched:
+                available_models = fetched
+                if event.current_model not in available_models:
+                    available_models.insert(0, event.current_model)
+        except Exception as exc:  # noqa: BLE001 - model list fetch is best-effort; fallback to current model
+            self.log.warning(f"Could not fetch model list: {exc}")
+
+        async def _on_dismiss(result: SettingsResult | None) -> None:
+            if result is None:
                 return
+            model = result.chat_model or self._query_config.chat_model
             self._query_config = self._query_config.model_copy(
-                update={"active_tools": tools}
+                update={"active_tools": result.active_tools, "chat_model": model}
             )
-            await update_thread_tools(
-                self._fp_app.db.conn, self._query_config.thread_id, tools
+            await update_thread_settings(
+                self._fp_app.db.conn,
+                self._query_config.thread_id,
+                result.active_tools,
+                result.chat_model,
             )
-            self.query_one(InputBar).update_tools(tools)
+            self.query_one(InputBar).update_settings(result.active_tools, model)
 
         await self.app.push_screen(
-            ToolSelector(event.active_tools, event.all_tools), _on_dismiss
+            SettingsModal(
+                event.current_model,
+                available_models,
+                event.active_tools,
+                event.all_tools,
+            ),
+            _on_dismiss,
         )
 
     async def on_input_bar_submitted(self, event: InputBar.Submitted) -> None:
