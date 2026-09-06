@@ -148,6 +148,7 @@ class Chat(Widget):
                 message=HumanMessage(content=text),
                 checkpointer=self._fp_app.db.checkpointer,
                 llm_config=self._fp_app.config.llm,
+                conn=self._fp_app.db.conn,
             ):
                 if isinstance(ev, TextToken):
                     if text_bubble is None:

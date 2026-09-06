@@ -31,8 +31,8 @@
     - User Input
         - basic user input
         - select tools
-
         - switch llm model
+
         - file / folder upload
         - interrupt generation
         - multiline user input
@@ -58,9 +58,9 @@
     - update mutable attributes
 
 - Memory / GraphRAG mechanism
-    - 
-
     - recall prior information from groups of chats / Project folder
+
+    - graphrag
 
 - ToolSet extension
     - persist tools on file system

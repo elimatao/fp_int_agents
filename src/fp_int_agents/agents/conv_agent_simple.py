@@ -1,6 +1,7 @@
 import operator
 from typing import Annotated, Literal
 
+import aiosqlite
 from langchain_core.language_models import LanguageModelInput
 from langchain_core.messages import AIMessage, AnyMessage, SystemMessage
 from langchain_core.runnables import Runnable, RunnableConfig
@@ -34,6 +35,7 @@ def build_agent(
     project: Project,
     checkpointer: BaseCheckpointSaver | None = None,
     llm_config: LlmConfig = _DEFAULT_LLM_CONFIG,
+    conn: aiosqlite.Connection | None = None,
 ) -> CompiledStateGraph:
     SimpleAgentInitConfig.model_validate(project.init_config)
     SimpleAgentConfig.model_validate(project.config)
@@ -48,11 +50,26 @@ def build_agent(
             model = model.bind_tools(tools)
         return model
 
-    def _llm_call(state: AgentState, config: RunnableConfig) -> AgentState:
+    async def _build_system_prompt(config: RunnableConfig) -> str:
+        base = project.system_prompt or "You are a helpful assistant."
+        if conn is None:
+            return base
+        qc = QueryConfig.from_runnable_config(config)
+        async with conn.execute(
+            "SELECT summary FROM threads WHERE project_id = ? AND id != ? AND summary IS NOT NULL",
+            (qc.project_id, qc.thread_id),
+        ) as cursor:
+            summaries = [row[0] async for row in cursor]
+        if not summaries:
+            return base
+        joined = "\n\n".join(f"- {s}" for s in summaries)
+        return f"{base}\n\n## Summaries of other conversations in this project\n{joined}"
+
+    async def _llm_call(state: AgentState, config: RunnableConfig) -> AgentState:
         return {
             "messages": [
                 _build_model(config).invoke(
-                    [SystemMessage(content="You are a helpful assistant.")]
+                    [SystemMessage(content=await _build_system_prompt(config))]
                     + state["messages"]
                 )
             ]

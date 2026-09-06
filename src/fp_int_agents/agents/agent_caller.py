@@ -1,5 +1,6 @@
 from collections.abc import AsyncIterator
 
+import aiosqlite
 from langchain_core.messages import AnyMessage, HumanMessage
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from pydantic import BaseModel
@@ -51,8 +52,9 @@ async def call_agent(
     message: HumanMessage,
     checkpointer: BaseCheckpointSaver,
     llm_config: LlmConfig = _DEFAULT_LLM_CONFIG,
+    conn: aiosqlite.Connection | None = None,
 ) -> AsyncIterator[StreamEvent]:
-    agent = CONVERSATIONAL_AGENTS[project.agent](project, checkpointer, llm_config)
+    agent = CONVERSATIONAL_AGENTS[project.agent](project, checkpointer, llm_config, conn)
     runnable_config = query_config.to_runnable_config()
     async for event in agent.astream_events(
         {"messages": [message]}, runnable_config, version="v2"

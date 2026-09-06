@@ -1,12 +1,14 @@
 from collections.abc import Callable
 
+import aiosqlite
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.graph.state import CompiledStateGraph
 
 from fp_int_agents.config import LlmConfig, Project
 
 ConversationalAgentFactory = Callable[
-    [Project, BaseCheckpointSaver | None, LlmConfig], CompiledStateGraph
+    [Project, BaseCheckpointSaver | None, LlmConfig, aiosqlite.Connection | None],
+    CompiledStateGraph,
 ]
 
 MemoryAgentFactory = Callable[[Project, LlmConfig], CompiledStateGraph]
