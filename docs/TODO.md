@@ -32,12 +32,14 @@
         - basic user input
         - select tools
         - switch llm model
-
         - file / folder upload
+
         - interrupt generation
         - multiline user input
         - message queueing?
+        - ingest button doesnt hide on project collapse
         - keyboard shortcuts
+        - interface responsive as often as possible
     - Conversation History
         - Scrolling
         - Scroll stop on long generations
@@ -61,6 +63,7 @@
     - recall prior information from groups of chats / Project folder
 
     - graphrag
+    - Add a dense conversation summarization mechanism that creates chunk embeddings of the conversation incrementally (don't recompute)
 
 - ToolSet extension
     - persist tools on file system

@@ -29,7 +29,7 @@ def register_ping_tool():
 
 @pytest.mark.asyncio
 async def test_history_replay_renders_tool_call_bubble(tmp_path):
-    app_cfg = load_config()
+    app_cfg = await load_config()
     model_id = await get_model_id(app_cfg)
     project = Project(name="test", agent="simple", chat_model=model_id)
     query_config = QueryConfig(

@@ -25,7 +25,7 @@ def register_ping_tool():
 
 @pytest.mark.asyncio
 async def test_agent_calls_tool_and_returns_response(project_config):
-    app_cfg = load_config()
+    app_cfg = await load_config()
     model_id = await get_model_id(app_cfg)
 
     agent = CONVERSATIONAL_AGENTS["simple"](project_config, None, app_cfg.llm)

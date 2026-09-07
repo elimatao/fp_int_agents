@@ -92,6 +92,23 @@ class _ProjectRow(Widget):
             event.stop()
             self.post_message(ProjectSidebar.DeleteProject(self._project_id))
 
+    class _IngestLabel(Widget):
+        DEFAULT_CSS = """
+        _IngestLabel { width: auto; height: 1; padding: 0 1; color: $foreground; background: transparent; }
+        _IngestLabel:hover { color: $accent; text-style: bold; }
+        """
+
+        def __init__(self, project: "Project", **kwargs) -> None:
+            super().__init__(**kwargs)
+            self._project_id = project.id
+
+        def render(self) -> str:
+            return "+ Ingest document"
+
+        def on_click(self, event: Click) -> None:
+            event.stop()
+            self.post_message(ProjectSidebar.IngestDocument(self._project_id))
+
     def __init__(self, project: Project, threads: list[Thread]) -> None:
         super().__init__(id=f"row-{project.id}")
         self._project = project
@@ -104,6 +121,9 @@ class _ProjectRow(Widget):
                 self._project.name, self, id=f"name-project-{self._project.id}"
             )
             yield self._DeleteLabel(self._project, id=f"del-project-{self._project.id}")
+        yield self._IngestLabel(
+            self._project, id=f"ingest-project-{self._project.id}"
+        )
         yield ThreadList(self._project, self._threads, id=f"tl-{self._project.id}")
 
     def watch_collapsed(self, collapsed: bool) -> None:
@@ -159,6 +179,11 @@ class ProjectSidebar(Widget):
             self.project_id = project_id
 
     class DeleteProject(Message):
+        def __init__(self, project_id: str) -> None:
+            super().__init__()
+            self.project_id = project_id
+
+    class IngestDocument(Message):
         def __init__(self, project_id: str) -> None:
             super().__init__()
             self.project_id = project_id

@@ -1,10 +1,12 @@
 import asyncio
+import pathlib
 
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal
 from textual.widgets import Footer, Header
 
 from .agents.agent_caller import summarize_thread
+from .agents.registry import CONVERSATIONAL_AGENTS, INGESTOR_AGENTS, MEMORY_AGENTS
 from .config import AppConfig, Project, QueryConfig, Thread
 from .constants import APP_NAME
 from .storage.db import (
@@ -20,6 +22,8 @@ from .storage.db import (
     update_thread_summary,
 )
 from .widgets.chat import Chat
+from .widgets.ingest_modal import IngestModal
+from .widgets.new_project_modal import NewProjectModal, NewProjectResult
 from .widgets.project_sidebar import ProjectSidebar
 
 
@@ -149,13 +153,79 @@ class FPIntAgentsApp(App):
     async def on_project_sidebar_new_project(
         self, _: ProjectSidebar.NewProject
     ) -> None:
+        def _done(result: NewProjectResult | None) -> None:
+            if result is not None:
+                self.run_worker(self._create_project(result), exclusive=False)
+
+        self.push_screen(
+            NewProjectModal(
+                conv_agents=list(CONVERSATIONAL_AGENTS.keys()),
+                mem_agents=list(MEMORY_AGENTS.keys()),
+                ingestors=list(INGESTOR_AGENTS.keys()),
+            ),
+            _done,
+        )
+
+    async def _create_project(self, result: NewProjectResult) -> None:
+        init_config = (
+            {"embedding_model": self.config.embedding_model}
+            if result.agent == "rag"
+            else {}
+        )
         project = await create_project(
-            self.db.conn, "New Project", self.config.chat_model
+            self.db.conn,
+            result.name,
+            self.config.chat_model,
+            agent=result.agent,
+            mem_agent=result.mem_agent,
+            ingestor=result.ingestor,
+            system_prompt=result.system_prompt or None,
+            init_config=init_config,
         )
         thread: Thread = await create_thread(self.db.conn, project.id)
         sidebar = self.query_one(ProjectSidebar)
         await sidebar.add_project(project, threads=[thread])
         await self._activate_thread(project, thread)
+
+    async def on_project_sidebar_ingest_document(
+        self, event: ProjectSidebar.IngestDocument
+    ) -> None:
+        project = await get_project(self.db.conn, event.project_id)
+        if project is None:
+            return
+        if not project.ingestor:
+            self.notify(
+                "Ingestion is disabled for this project.", severity="warning"
+            )
+            return
+
+        def _done(path: str | None) -> None:
+            if path:
+                self.run_worker(self._run_ingest(project, path), exclusive=False)
+
+        self.push_screen(IngestModal(), _done)
+
+    async def _run_ingest(self, project: Project, path: str) -> None:
+        assert project.ingestor is not None
+        try:
+            text = await asyncio.to_thread(self._read_file, path)
+            await INGESTOR_AGENTS[project.ingestor](
+                project, text, self.config.llm, self.db.conn
+            )
+            self.notify(f"Ingested {path}")
+        except Exception as exc:  # noqa: BLE001 - surface failure to the user
+            self.log.warning(f"Ingest failed: {exc}")
+            self.notify(f"Ingest failed: {exc}", severity="error")
+
+    @staticmethod
+    def _read_file(path: str) -> str:
+        p = pathlib.Path(path)
+        if p.suffix.lower() == ".pdf":
+            from pypdf import PdfReader
+
+            reader = PdfReader(str(p))
+            return "\n\n".join((page.extract_text() or "") for page in reader.pages)
+        return p.read_text(encoding="utf-8")
 
     async def on_project_sidebar_new_thread(
         self, event: ProjectSidebar.NewThread

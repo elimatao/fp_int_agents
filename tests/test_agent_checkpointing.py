@@ -25,7 +25,7 @@ def _thread_cfg(thread_id: str, model_id: str) -> dict:
 
 @pytest.mark.asyncio
 async def test_checkpoint_persists_history_across_turns(project_config) -> None:
-    app_cfg = load_config()
+    app_cfg = await load_config()
     model_id = await get_model_id(app_cfg)
 
     with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as f:
@@ -55,7 +55,7 @@ async def test_checkpoint_persists_history_across_turns(project_config) -> None:
 
 @pytest.mark.asyncio
 async def test_checkpoint_isolates_different_threads(project_config) -> None:
-    app_cfg = load_config()
+    app_cfg = await load_config()
     model_id = await get_model_id(app_cfg)
 
     async with AsyncSqliteSaver.from_conn_string(":memory:") as checkpointer:

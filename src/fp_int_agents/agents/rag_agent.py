@@ -1,9 +1,11 @@
+import asyncio
 import operator
 from typing import Annotated, Literal
 
 import aiosqlite
+from langchain_core.embeddings import Embeddings
 from langchain_core.language_models import LanguageModelInput
-from langchain_core.messages import AIMessage, AnyMessage, SystemMessage
+from langchain_core.messages import AIMessage, AnyMessage, HumanMessage, SystemMessage
 from langchain_core.runnables import Runnable, RunnableConfig
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.graph import END, START, StateGraph
@@ -12,16 +14,21 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from fp_int_agents.config import LlmConfig, Project, QueryConfig
-from fp_int_agents.llm.client import get_chat_model
+from fp_int_agents.llm.client import get_chat_model, get_embedding_model
+from fp_int_agents.storage import vectorstore
 from fp_int_agents.tools.registry import dispatch, get_tools
 
-
-class SimpleAgentInitConfig(BaseModel):
-    """Immutable agent-specific config for the simple agent (stored in Project.init_config)."""
+TOP_K = 5
 
 
-class SimpleAgentConfig(BaseModel):
-    """Mutable agent-specific config for the simple agent (stored in Project.config)."""
+class RagAgentInitConfig(BaseModel):
+    """Immutable config for the RAG agent (stored in Project.init_config)."""
+
+    embedding_model: str = "nomic-embed-text"
+
+
+class RagAgentConfig(BaseModel):
+    """Mutable config for the RAG agent (stored in Project.config)."""
 
 
 class AgentState(TypedDict):
@@ -37,8 +44,15 @@ def build_agent(
     llm_config: LlmConfig = _DEFAULT_LLM_CONFIG,
     conn: aiosqlite.Connection | None = None,
 ) -> CompiledStateGraph:
-    SimpleAgentInitConfig.model_validate(project.init_config)
-    SimpleAgentConfig.model_validate(project.config)
+    init = RagAgentInitConfig.model_validate(project.init_config)
+    RagAgentConfig.model_validate(project.config)
+
+    def _embeddings() -> Embeddings:
+        return get_embedding_model(
+            base_url=llm_config.base_url,
+            model=init.embedding_model,
+            api_key=llm_config.api_key,
+        )
 
     def _build_model(config: RunnableConfig) -> Runnable[LanguageModelInput, AIMessage]:
         qc = QueryConfig.from_runnable_config(config)
@@ -50,35 +64,37 @@ def build_agent(
             model = model.bind_tools(tools)
         return model
 
-    async def _build_system_prompt(config: RunnableConfig) -> str:
+    async def _retrieve(project_id: str, query: str) -> str:
+        try:
+            docs = await asyncio.to_thread(
+                vectorstore.search, _embeddings(), project_id, query, TOP_K
+            )
+        except Exception:  # noqa: BLE001 - best-effort: nothing ingested / endpoint down
+            return ""
+        return "\n\n".join(f"- {d.page_content}" for d in docs)
+
+    async def _build_system_prompt(state: AgentState, config: RunnableConfig) -> str:
         base = project.system_prompt or "You are a helpful assistant."
-        if conn is None:
-            return base
         qc = QueryConfig.from_runnable_config(config)
-        async with conn.execute(
-            "SELECT summary FROM threads WHERE project_id = ? AND id != ? AND summary IS NOT NULL",
-            (qc.project_id, qc.thread_id),
-        ) as cursor:
-            thread_summaries = [row[0] async for row in cursor]
-        async with conn.execute(
-            "SELECT summary FROM documents WHERE project_id = ? AND summary IS NOT NULL",
-            (qc.project_id,),
-        ) as cursor:
-            doc_summaries = [row[0] async for row in cursor]
-        out = base
-        if thread_summaries:
-            joined = "\n\n".join(f"- {s}" for s in thread_summaries)
-            out += f"\n\n## Summaries of other conversations in this project\n{joined}"
-        if doc_summaries:
-            joined = "\n\n".join(f"- {s}" for s in doc_summaries)
-            out += f"\n\n## Summaries of documents in this project\n{joined}"
-        return out
+        last_human = next(
+            (m.content for m in reversed(state["messages"])
+             if isinstance(m, HumanMessage)),
+            "",
+        )
+        context = await _retrieve(qc.project_id, str(last_human)) if last_human else ""
+        if not context:
+            return base
+        return (
+            f"{base}\n\n## Retrieved context\n"
+            "Use the following retrieved passages to answer if relevant:\n"
+            f"{context}"
+        )
 
     async def _llm_call(state: AgentState, config: RunnableConfig) -> AgentState:
         return {
             "messages": [
                 _build_model(config).invoke(
-                    [SystemMessage(content=await _build_system_prompt(config))]
+                    [SystemMessage(content=await _build_system_prompt(state, config))]
                     + state["messages"]
                 )
             ]

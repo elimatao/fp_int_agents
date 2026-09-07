@@ -8,9 +8,13 @@ authors = [
 ]
 requires-python = ">=3.13"
 dependencies = [
+    "fastembed>=0.4.2",
     "langchain-openai>=1.5.1",
+    "langchain-qdrant>=1.1.0",
+    "langchain-text-splitters>=0.3.0",
     "langgraph>=1.2.11",
     "langgraph-checkpoint-sqlite>=3.1.1",
+    "pypdf>=5.0.0",
     "textual>=8.2.8",
 ]
 
@@ -23,6 +27,7 @@ build-backend = "uv_build"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+markers = ["network: needs model download / live endpoint"]
 
 [dependency-groups]
 dev = [

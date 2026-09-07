@@ -29,7 +29,7 @@ def register_ping_tool():
 
 @pytest.mark.asyncio
 async def test_call_agent_emits_tool_events(project_config, memory_checkpointer):
-    app_cfg = load_config()
+    app_cfg = await load_config()
     model_id = await get_model_id(app_cfg)
     query_config = QueryConfig(
         thread_id="test-thread",

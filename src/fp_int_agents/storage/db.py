@@ -8,7 +8,7 @@ from dataclasses import dataclass
 import aiosqlite
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 
-from fp_int_agents.config import Project, Thread
+from fp_int_agents.config import Document, Project, Thread
 
 _DDL = """
 CREATE TABLE IF NOT EXISTS projects (
@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS projects (
     name          TEXT NOT NULL,
     agent         TEXT NOT NULL DEFAULT 'simple',
     mem_agent     TEXT,
+    ingestor      TEXT,
     chat_model    TEXT NOT NULL,
     system_prompt TEXT,
     init_config   TEXT NOT NULL DEFAULT '{}',
@@ -32,6 +33,14 @@ CREATE TABLE IF NOT EXISTS threads (
     summary               TEXT,
     summary_message_count INTEGER,
     created_at            TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS documents (
+    id         TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    summary    TEXT,
+    original   TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 """
 
@@ -52,6 +61,10 @@ def _row_to_thread(row: tuple, cols: list[str]) -> Thread:
     d = dict(zip(cols, row))
     d["active_tools"] = json.loads(d["active_tools"])
     return Thread.model_validate(d)
+
+
+def _row_to_document(row: tuple, cols: list[str]) -> Document:
+    return Document.model_validate(dict(zip(cols, row)))
 
 
 def _cols(cursor: aiosqlite.Cursor) -> list[str]:
@@ -85,6 +98,7 @@ async def create_project(
     *,
     agent: str = "simple",
     mem_agent: str | None = None,
+    ingestor: str | None = None,
     system_prompt: str | None = None,
     init_config: dict | None = None,
     config: dict | None = None,
@@ -94,17 +108,19 @@ async def create_project(
         chat_model=chat_model,
         agent=agent,
         mem_agent=mem_agent,
+        ingestor=ingestor,
         system_prompt=system_prompt,
         init_config=init_config or {},
         config=config or {},
     )
     await conn.execute(
-        "INSERT INTO projects (id, name, agent, mem_agent, chat_model, system_prompt, init_config, config) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO projects (id, name, agent, mem_agent, ingestor, chat_model, system_prompt, init_config, config) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (
             project.id,
             project.name,
             project.agent,
             project.mem_agent,
+            project.ingestor,
             project.chat_model,
             project.system_prompt,
             json.dumps(project.init_config),
@@ -117,7 +133,7 @@ async def create_project(
 
 async def get_project(conn: aiosqlite.Connection, project_id: str) -> Project | None:
     async with conn.execute(
-        "SELECT id, name, agent, mem_agent, chat_model, system_prompt, init_config, config, created_at FROM projects WHERE id = ?",
+        "SELECT id, name, agent, mem_agent, ingestor, chat_model, system_prompt, init_config, config, created_at FROM projects WHERE id = ?",
         (project_id,),
     ) as cursor:
         row = await cursor.fetchone()
@@ -128,7 +144,7 @@ async def get_project(conn: aiosqlite.Connection, project_id: str) -> Project | 
 
 async def list_projects(conn: aiosqlite.Connection) -> list[Project]:
     async with conn.execute(
-        "SELECT id, name, agent, mem_agent, chat_model, system_prompt, init_config, config, created_at FROM projects ORDER BY created_at DESC"
+        "SELECT id, name, agent, mem_agent, ingestor, chat_model, system_prompt, init_config, config, created_at FROM projects ORDER BY created_at DESC"
     ) as cursor:
         cols = _cols(cursor)
         return [_row_to_project(row, cols) async for row in cursor]
@@ -246,3 +262,32 @@ async def delete_project(
     await conn.commit()
     for tid in thread_ids:
         await checkpointer.adelete_thread(tid)
+
+
+# --- Documents ---
+
+
+async def create_document(
+    conn: aiosqlite.Connection,
+    project_id: str,
+    original: str,
+    summary: str | None = None,
+) -> Document:
+    doc = Document(project_id=project_id, original=original, summary=summary)
+    await conn.execute(
+        "INSERT INTO documents (id, project_id, summary, original) VALUES (?, ?, ?, ?)",
+        (doc.id, doc.project_id, doc.summary, doc.original),
+    )
+    await conn.commit()
+    return doc
+
+
+async def list_documents(
+    conn: aiosqlite.Connection, project_id: str
+) -> list[Document]:
+    async with conn.execute(
+        "SELECT id, project_id, summary, original, created_at FROM documents WHERE project_id = ? ORDER BY created_at DESC",
+        (project_id,),
+    ) as cursor:
+        cols = _cols(cursor)
+        return [_row_to_document(row, cols) async for row in cursor]
