@@ -60,7 +60,7 @@ class LlmConfig(BaseModel):
 
 
 class AppConfig(BaseModel):
-    chat_model: str = "llama3.2"
+    chat_model: str | None = None
     embedding_model: str = "nomic-embed-text"
     agent: str = "simple"
     llm: LlmConfig = LlmConfig()
@@ -72,11 +72,21 @@ def _load_toml(path: pathlib.Path) -> dict[str, Any]:
         return tomllib.load(f)
 
 
-def load_config() -> AppConfig:
+async def load_config() -> AppConfig:
+    from fp_int_agents.llm.models import list_models
+
     override_path = pathlib.Path("config.toml")
     if not override_path.exists():
-        return AppConfig()
-    raw = _load_toml(override_path)
-    llm_raw = raw.pop("llm", {})
-    defaults = raw.pop("defaults", {})
-    return AppConfig.model_validate({**defaults, "llm": llm_raw})
+        cfg = AppConfig()
+    else:
+        raw = _load_toml(override_path)
+        llm_raw = raw.pop("llm", {})
+        defaults = raw.pop("defaults", {})
+        cfg = AppConfig.model_validate({**defaults, "llm": llm_raw})
+
+    if cfg.chat_model is None:
+        models = await list_models(cfg.llm.base_url, cfg.llm.api_key)
+        if models:
+            cfg.chat_model = models[0].id
+
+    return cfg

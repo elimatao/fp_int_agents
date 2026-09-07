@@ -87,10 +87,10 @@ class Chat(Widget):
     # --- Event handlers ---
 
     async def on_input_bar_submitted(self, event: InputBar.Submitted) -> None:
+        await self._mount_message_bubble(HumanMessage(content=event.text))
         project = await get_project(self._fp_app.db.conn, self._query_config.project_id)
         if project is None:
             return
-        await self._mount_message_bubble(HumanMessage(content=event.text))
         self._agent_task = asyncio.create_task(
             self._stream_agent_response(event.text, project)
         )

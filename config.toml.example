@@ -6,6 +6,7 @@
 chat_model = "llama3.2"
 embedding_model = "nomic-embed-text"
 agent = "simple"
+mem_agent = "simple"
 db_path = "data/app.db"
 
 [llm]

@@ -22,6 +22,6 @@ def main() -> None:
 
 
 async def _run() -> None:
-    cfg = load_config()
+    cfg = await load_config()
     async with open_db(cfg.db_path) as db:
         await FPIntAgentsApp(db, cfg).run_async()
