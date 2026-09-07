@@ -54,8 +54,8 @@
 - Project Management
     - create
     - delete project
-
     - configure
+
     - showcase agent-binding (for type of conversation )
     - update mutable attributes
 
@@ -69,3 +69,9 @@
     - persist tools on file system
     - defined via name, description, executable?
     - refresh tool list every time you press the tools button in the input bar.
+
+
+
+    - bug where system prompt is unnecessarily rebuilt in graph
+    - remove default project generation
+    - investigate performance
