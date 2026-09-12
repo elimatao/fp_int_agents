@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS threads (
 CREATE TABLE IF NOT EXISTS documents (
     id         TEXT PRIMARY KEY,
     project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    title      TEXT,
     summary    TEXT,
     original   TEXT NOT NULL,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
@@ -271,12 +272,13 @@ async def create_document(
     conn: aiosqlite.Connection,
     project_id: str,
     original: str,
+    title: str | None = None,
     summary: str | None = None,
 ) -> Document:
-    doc = Document(project_id=project_id, original=original, summary=summary)
+    doc = Document(project_id=project_id, title=title, original=original, summary=summary)
     await conn.execute(
-        "INSERT INTO documents (id, project_id, summary, original) VALUES (?, ?, ?, ?)",
-        (doc.id, doc.project_id, doc.summary, doc.original),
+        "INSERT INTO documents (id, project_id, title, summary, original) VALUES (?, ?, ?, ?, ?)",
+        (doc.id, doc.project_id, doc.title, doc.summary, doc.original),
     )
     await conn.commit()
     return doc
@@ -286,7 +288,7 @@ async def list_documents(
     conn: aiosqlite.Connection, project_id: str
 ) -> list[Document]:
     async with conn.execute(
-        "SELECT id, project_id, summary, original, created_at FROM documents WHERE project_id = ? ORDER BY created_at DESC",
+        "SELECT id, project_id, title, summary, original, created_at FROM documents WHERE project_id = ? ORDER BY created_at DESC",
         (project_id,),
     ) as cursor:
         cols = _cols(cursor)

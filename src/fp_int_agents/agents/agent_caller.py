@@ -35,7 +35,35 @@ class ToolCallFinished(BaseModel):
     result: str
 
 
-StreamEvent = TextToken | ToolCallStarted | ToolCallFinished
+class RagStepStarted(BaseModel):
+    """A RAG pipeline step (rewriter / judge) has begun."""
+
+    node: str
+
+
+class RagStepFinished(BaseModel):
+    """A RAG pipeline step has produced its output."""
+
+    node: str
+    result: str
+
+
+class RerankerFinished(BaseModel):
+    """The reranker node has selected its top documents."""
+
+    docs: list[str]
+
+
+StreamEvent = TextToken | ToolCallStarted | ToolCallFinished | RagStepStarted | RagStepFinished | RerankerFinished
+
+# LangGraph node names whose LLM output is internal to the RAG pipeline.
+_RAG_INTERNAL_NODES = {"query_rewriter", "relevance_judge"}
+
+_RAG_NODE_LABELS = {
+    "query_rewriter": "Query rewrite",
+    "relevance_judge": "Relevance check",
+    "reranker": "Reranked docs",
+}
 
 
 def preview_result(value: object) -> str:
@@ -56,12 +84,44 @@ async def call_agent(
 ) -> AsyncIterator[StreamEvent]:
     agent = CONVERSATIONAL_AGENTS[project.agent](project, checkpointer, llm_config, conn)
     runnable_config = query_config.to_runnable_config()
+    rag_node_buffers: dict[str, str] = {}  # run_id -> accumulated text for internal nodes
+
     async for event in agent.astream_events(
         {"messages": [message]}, runnable_config, version="v2"
     ):
         kind = event["event"]
-        if kind == "on_chat_model_stream" and event["data"]["chunk"].content:
-            yield TextToken(text=event["data"]["chunk"].content)
+        node = event.get("metadata", {}).get("langgraph_node", "")
+
+        if kind == "on_chat_model_start" and node in _RAG_INTERNAL_NODES:
+            run_id = event["run_id"]
+            rag_node_buffers[run_id] = ""
+            yield RagStepStarted(node=node)
+
+        elif kind == "on_chat_model_stream":
+            chunk_content = event["data"]["chunk"].content
+            if not chunk_content:
+                continue
+            run_id = event["run_id"]
+            if run_id in rag_node_buffers:
+                rag_node_buffers[run_id] += chunk_content
+            else:
+                yield TextToken(text=chunk_content)
+
+        elif kind == "on_chat_model_end" and event["run_id"] in rag_node_buffers:
+            run_id = event["run_id"]
+            yield RagStepFinished(node=node, result=rag_node_buffers.pop(run_id))
+
+        elif kind == "on_chain_end" and node == "reranker":
+            docs = (event.get("data", {}).get("output") or {}).get("documents") or []
+            seen: set[str] = set()
+            titles: list[str] = []
+            for d in docs:
+                t = d.metadata.get("title") or d.metadata.get("doc_id", "unknown")
+                if t not in seen:
+                    seen.add(t)
+                    titles.append(t)
+            yield RerankerFinished(docs=titles)
+
         elif kind == "on_tool_start":
             yield ToolCallStarted(
                 run_id=event["run_id"],

@@ -7,6 +7,9 @@ from textual.containers import VerticalScroll
 from textual.widget import Widget
 
 from fp_int_agents.agents.agent_caller import (
+    RagStepFinished,
+    RagStepStarted,
+    RerankerFinished,
     TextToken,
     ToolCallFinished,
     ToolCallStarted,
@@ -18,6 +21,7 @@ from fp_int_agents.storage.db import get_project, get_thread, update_thread_sett
 
 from .input_bar import InputBar
 from .message_bubble import MessageBubble
+from .rag_log_bubble import RagLogBubble
 from .settings_modal import SettingsModal, SettingsResult
 from .summary_bubble import SummaryBubble
 from .tool_call_bubble import ToolCallBubble
@@ -141,6 +145,7 @@ class Chat(Widget):
     async def _stream_agent_response(self, text: str, project) -> None:
         text_bubble: MessageBubble | None = None
         tool_bubbles: dict[str, ToolCallBubble] = {}
+        rag_bubbles: dict[str, RagLogBubble] = {}
         try:
             async for ev in call_agent(
                 project=project,
@@ -164,6 +169,19 @@ class Chat(Widget):
                     bubble = tool_bubbles.get(ev.run_id)
                     if bubble is not None:
                         bubble.set_result(ev.result)
+                elif isinstance(ev, RagStepStarted):
+                    rag_bubble = RagLogBubble(ev.node)
+                    rag_bubbles[ev.node] = rag_bubble
+                    await self._scroll.mount(rag_bubble)
+                    text_bubble = None
+                elif isinstance(ev, RagStepFinished):
+                    rag_bubble = rag_bubbles.get(ev.node)
+                    if rag_bubble is not None:
+                        rag_bubble.set_result(ev.result)
+                elif isinstance(ev, RerankerFinished):
+                    rag_bubble = RagLogBubble("reranker")
+                    await self._scroll.mount(rag_bubble)
+                    rag_bubble.set_result("\n".join(ev.docs) if ev.docs else "no documents")
                 self._scroll.scroll_end(animate=False)
         except asyncio.CancelledError:
             pass

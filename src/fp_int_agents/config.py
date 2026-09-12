@@ -42,6 +42,7 @@ class Thread(BaseModel):
 class Document(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     project_id: str
+    title: str | None = None
     summary: str | None = None
     original: str
     created_at: str | None = None

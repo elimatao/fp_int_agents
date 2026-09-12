@@ -54,14 +54,6 @@ class FPIntAgentsApp(App):
     async def on_mount(self) -> None:
         self.theme = "tokyo-night"
         projects = await list_projects(self.db.conn)
-        if not projects:
-            project = await create_project(
-                self.db.conn,
-                "Default Project",
-                self.config.chat_model,
-                mem_agent="simple",
-            )
-            projects = [project]
 
         threads_per_project = await asyncio.gather(
             *[list_threads(self.db.conn, p.id) for p in projects]
@@ -75,6 +67,9 @@ class FPIntAgentsApp(App):
 
         sidebar = self.query_one(ProjectSidebar)
         await sidebar.populate(data)
+
+        if not data:
+            return
 
         first_project, first_threads = data[0]
         first_thread = first_threads[0]
@@ -114,9 +109,10 @@ class FPIntAgentsApp(App):
 
     async def _swap_chat(self, query_config: QueryConfig) -> None:
         layout = self.query_one("#main-layout", Horizontal)
-        outgoing = layout.query_one(Chat)
-        asyncio.create_task(self._summarize_on_leave(outgoing.query_config))
-        await outgoing.remove()
+        outgoing = layout.query("Chat").first(Chat) if layout.query("Chat") else None
+        if outgoing is not None:
+            asyncio.create_task(self._summarize_on_leave(outgoing.query_config))
+            await outgoing.remove()
         await layout.mount(Chat(query_config))
 
     async def _summarize_on_leave(self, query_config: QueryConfig) -> None:
@@ -209,8 +205,9 @@ class FPIntAgentsApp(App):
         assert project.ingestor is not None
         try:
             text = await asyncio.to_thread(self._read_file, path)
+            title = pathlib.Path(path).name
             await INGESTOR_AGENTS[project.ingestor](
-                project, text, self.config.llm, self.db.conn
+                project, text, self.config.llm, self.db.conn, title
             )
             self.notify(f"Ingested {path}")
         except Exception as exc:  # noqa: BLE001 - surface failure to the user
@@ -269,12 +266,8 @@ class FPIntAgentsApp(App):
         if event.project_id == self.query_one(Chat).query_config.project_id:
             projects = await list_projects(self.db.conn)
             if not projects:
-                project = await create_project(
-                    self.db.conn, "Default Project", self.config.chat_model
-                )
-                thread: Thread = await create_thread(self.db.conn, project.id)
-                await sidebar.add_project(project, threads=[thread])
-                await self._activate_thread(project, thread)
+                layout = self.query_one("#main-layout", Horizontal)
+                await layout.query_one(Chat).remove()
             else:
                 p = projects[0]
                 threads = await list_threads(self.db.conn, p.id)

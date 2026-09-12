@@ -13,10 +13,6 @@
 ## Architecture
 - flexible multi-layer Configuration
 - Framework: Textual TUI
-
-- two fine-tuned models
-- graph-rag
-
 - conversation summarization (essence extraction mechanism), should be agent-independent, i.e., a function should be defined, which will be called on some hook, i.e., chat switched
 
 
@@ -25,6 +21,8 @@
 - done
 
 - to do
+
+- todo (nice to have)
 
 ### Mandatory (Required)
 - Chat
@@ -35,11 +33,12 @@
         - file / folder upload
 
         - interrupt generation
-        - multiline user input
+        
         - message queueing?
         - ingest button doesnt hide on project collapse
         - keyboard shortcuts
         - interface responsive as often as possible
+        - multiline user input
     - Conversation History
         - Scrolling
         - Scroll stop on long generations
@@ -75,3 +74,7 @@
     - bug where system prompt is unnecessarily rebuilt in graph
     - remove default project generation
     - investigate performance
+
+
+- nice to have
+    - graph rag

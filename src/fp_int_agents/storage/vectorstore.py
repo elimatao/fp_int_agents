@@ -91,14 +91,20 @@ def add_chunks(
     project_id: str,
     doc_id: str,
     chunks: list[str],
+    title: str | None = None,
     client: QdrantClient | None = None,
 ) -> list[str]:
-    """Embed (dense + sparse) and store chunks; payload carries doc_id + project_id."""
+    """Embed (dense + sparse) and store chunks; payload carries doc_id + project_id + title."""
     store = get_vector_store(embeddings, client)
     docs = [
         Document(
             page_content=chunk,
-            metadata={"project_id": project_id, "doc_id": doc_id, "chunk_index": i},
+            metadata={
+                "project_id": project_id,
+                "doc_id": doc_id,
+                "title": title or doc_id,
+                "chunk_index": i,
+            },
         )
         for i, chunk in enumerate(chunks)
     ]
