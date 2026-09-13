@@ -181,7 +181,9 @@ class Chat(Widget):
                 elif isinstance(ev, RerankerFinished):
                     rag_bubble = RagLogBubble("reranker")
                     await self._scroll.mount(rag_bubble)
-                    rag_bubble.set_result("\n".join(ev.docs) if ev.docs else "no documents")
+                    rag_bubble.set_result(
+                        "\n".join(ev.docs) if ev.docs else "no documents"
+                    )
                 self._scroll.scroll_end(animate=False)
         except asyncio.CancelledError:
             pass

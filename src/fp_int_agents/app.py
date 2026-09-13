@@ -137,7 +137,9 @@ class FPIntAgentsApp(App):
                 messages=messages,
                 llm_config=self.config.llm,
             )
-            await update_thread_summary(self.db.conn, query_config.thread_id, summary, len(messages))
+            await update_thread_summary(
+                self.db.conn, query_config.thread_id, summary, len(messages)
+            )
         except Exception as exc:  # noqa: BLE001 - summarization is best-effort
             self.log.warning(f"Thread summarization failed: {exc}")
 
@@ -190,9 +192,7 @@ class FPIntAgentsApp(App):
         if project is None:
             return
         if not project.ingestor:
-            self.notify(
-                "Ingestion is disabled for this project.", severity="warning"
-            )
+            self.notify("Ingestion is disabled for this project.", severity="warning")
             return
 
         def _done(path: str | None) -> None:

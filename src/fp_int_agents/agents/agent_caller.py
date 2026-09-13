@@ -54,7 +54,14 @@ class RerankerFinished(BaseModel):
     docs: list[str]
 
 
-StreamEvent = TextToken | ToolCallStarted | ToolCallFinished | RagStepStarted | RagStepFinished | RerankerFinished
+StreamEvent = (
+    TextToken
+    | ToolCallStarted
+    | ToolCallFinished
+    | RagStepStarted
+    | RagStepFinished
+    | RerankerFinished
+)
 
 # LangGraph node names whose LLM output is internal to the RAG pipeline.
 _RAG_INTERNAL_NODES = {"query_rewriter", "relevance_judge"}
@@ -82,9 +89,13 @@ async def call_agent(
     llm_config: LlmConfig = _DEFAULT_LLM_CONFIG,
     conn: aiosqlite.Connection | None = None,
 ) -> AsyncIterator[StreamEvent]:
-    agent = CONVERSATIONAL_AGENTS[project.agent](project, checkpointer, llm_config, conn)
+    agent = CONVERSATIONAL_AGENTS[project.agent](
+        project, checkpointer, llm_config, conn
+    )
     runnable_config = query_config.to_runnable_config()
-    rag_node_buffers: dict[str, str] = {}  # run_id -> accumulated text for internal nodes
+    rag_node_buffers: dict[
+        str, str
+    ] = {}  # run_id -> accumulated text for internal nodes
 
     async for event in agent.astream_events(
         {"messages": [message]}, runnable_config, version="v2"

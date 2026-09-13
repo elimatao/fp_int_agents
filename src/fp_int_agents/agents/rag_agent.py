@@ -84,20 +84,30 @@ def build_agent(
     def _chat(config: RunnableConfig) -> Runnable[LanguageModelInput, AIMessage]:
         qc = QueryConfig.from_runnable_config(config)
         return get_chat_model(
-            base_url=llm_config.base_url, model=qc.chat_model, api_key=llm_config.api_key
+            base_url=llm_config.base_url,
+            model=qc.chat_model,
+            api_key=llm_config.api_key,
         )
 
-    def _chat_with_tools(config: RunnableConfig) -> Runnable[LanguageModelInput, AIMessage]:
+    def _chat_with_tools(
+        config: RunnableConfig,
+    ) -> Runnable[LanguageModelInput, AIMessage]:
         qc = QueryConfig.from_runnable_config(config)
         tools = get_tools(qc.active_tools)
         model = get_chat_model(
-            base_url=llm_config.base_url, model=qc.chat_model, api_key=llm_config.api_key
+            base_url=llm_config.base_url,
+            model=qc.chat_model,
+            api_key=llm_config.api_key,
         )
         return model.bind_tools(tools) if tools else model
 
     async def query_rewriter(state: AgentState, config: RunnableConfig) -> dict:
         last_human = next(
-            (m.content for m in reversed(state["messages"]) if isinstance(m, HumanMessage)),
+            (
+                m.content
+                for m in reversed(state["messages"])
+                if isinstance(m, HumanMessage)
+            ),
             "",
         )
         prior_query = state.get("query") or str(last_human)
@@ -150,17 +160,27 @@ def build_agent(
 
     async def relevance_judge(state: AgentState, config: RunnableConfig) -> dict:
         last_human = next(
-            (m.content for m in reversed(state["messages"]) if isinstance(m, HumanMessage)),
+            (
+                m.content
+                for m in reversed(state["messages"])
+                if isinstance(m, HumanMessage)
+            ),
             "",
         )
         response = await _chat(config).ainvoke(
             [
                 SystemMessage(content=_JUDGE_PROMPT),
-                HumanMessage(content=f"Question: {last_human}\n\nAnswer: {state['generation']}"),
+                HumanMessage(
+                    content=f"Question: {last_human}\n\nAnswer: {state['generation']}"
+                ),
             ]
         )
         verdict = str(response.content).strip().lower()
-        is_relevant = "relevant" in verdict and "not_relevant" not in verdict and "not relevant" not in verdict
+        is_relevant = (
+            "relevant" in verdict
+            and "not_relevant" not in verdict
+            and "not relevant" not in verdict
+        )
         current_count = state.get("rewrite_count", 0)
 
         if is_relevant or current_count >= MAX_REWRITES:
@@ -168,7 +188,11 @@ def build_agent(
         return {"rewrite_count": current_count + 1, "_judge_verdict": "query_rewriter"}
 
     def _after_generate(state: AgentState) -> Literal["tool_node", "relevance_judge"]:
-        return "tool_node" if getattr(state["messages"][-1], "tool_calls", None) else "relevance_judge"
+        return (
+            "tool_node"
+            if getattr(state["messages"][-1], "tool_calls", None)
+            else "relevance_judge"
+        )
 
     def _after_judge(state: AgentState) -> Literal["query_rewriter", "__end__"]:
         return state.get("_judge_verdict", END)  # type: ignore[return-value]
@@ -185,7 +209,9 @@ def build_agent(
     builder.add_edge("query_rewriter", "hybrid_search")
     builder.add_edge("hybrid_search", "reranker")
     builder.add_edge("reranker", "generate")
-    builder.add_conditional_edges("generate", _after_generate, ["tool_node", "relevance_judge"])
+    builder.add_conditional_edges(
+        "generate", _after_generate, ["tool_node", "relevance_judge"]
+    )
     builder.add_edge("tool_node", "generate")
     builder.add_conditional_edges(
         "relevance_judge",

@@ -13,9 +13,7 @@ ConversationalAgentFactory = Callable[
 
 MemoryAgentFactory = Callable[[Project, LlmConfig], CompiledStateGraph]
 
-IngestorFn = Callable[
-    [Project, str, LlmConfig, aiosqlite.Connection], Awaitable[None]
-]
+IngestorFn = Callable[[Project, str, LlmConfig, aiosqlite.Connection], Awaitable[None]]
 
 CONVERSATIONAL_AGENTS: dict[str, ConversationalAgentFactory] = {}
 

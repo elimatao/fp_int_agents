@@ -35,14 +35,18 @@ async def test_checkpoint_persists_history_across_turns(project_config) -> None:
         thread_cfg = _thread_cfg("ckpt-thread-persist", model_id)
 
         async with AsyncSqliteSaver.from_conn_string(db_path) as checkpointer:
-            agent = build_agent(project_config, checkpointer=checkpointer, llm_config=app_cfg.llm)
+            agent = build_agent(
+                project_config, checkpointer=checkpointer, llm_config=app_cfg.llm
+            )
             await agent.ainvoke(
                 {"messages": [HumanMessage(content="My name is Alice.")]},
                 config=thread_cfg,
             )
 
         async with AsyncSqliteSaver.from_conn_string(db_path) as checkpointer:
-            agent = build_agent(project_config, checkpointer=checkpointer, llm_config=app_cfg.llm)
+            agent = build_agent(
+                project_config, checkpointer=checkpointer, llm_config=app_cfg.llm
+            )
             result = await agent.ainvoke(
                 {"messages": [HumanMessage(content="What is my name?")]},
                 config=thread_cfg,
@@ -59,7 +63,9 @@ async def test_checkpoint_isolates_different_threads(project_config) -> None:
     model_id = await get_model_id(app_cfg)
 
     async with AsyncSqliteSaver.from_conn_string(":memory:") as checkpointer:
-        agent = build_agent(project_config, checkpointer=checkpointer, llm_config=app_cfg.llm)
+        agent = build_agent(
+            project_config, checkpointer=checkpointer, llm_config=app_cfg.llm
+        )
 
         await agent.ainvoke(
             {"messages": [HumanMessage(content="My name is Bob.")]},

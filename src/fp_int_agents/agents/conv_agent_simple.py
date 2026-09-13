@@ -44,7 +44,9 @@ def build_agent(
         qc = QueryConfig.from_runnable_config(config)
         tools = get_tools(qc.active_tools)
         model = get_chat_model(
-            base_url=llm_config.base_url, model=qc.chat_model, api_key=llm_config.api_key
+            base_url=llm_config.base_url,
+            model=qc.chat_model,
+            api_key=llm_config.api_key,
         )
         if tools:
             model = model.bind_tools(tools)

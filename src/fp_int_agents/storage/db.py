@@ -186,7 +186,13 @@ async def create_thread(
     thread = Thread(project_id=project_id, title=title)
     await conn.execute(
         "INSERT INTO threads (id, project_id, title, active_tools, chat_model) VALUES (?, ?, ?, ?, ?)",
-        (thread.id, thread.project_id, thread.title, json.dumps(thread.active_tools), thread.chat_model),
+        (
+            thread.id,
+            thread.project_id,
+            thread.title,
+            json.dumps(thread.active_tools),
+            thread.chat_model,
+        ),
     )
     await conn.commit()
     return thread
@@ -275,7 +281,9 @@ async def create_document(
     title: str | None = None,
     summary: str | None = None,
 ) -> Document:
-    doc = Document(project_id=project_id, title=title, original=original, summary=summary)
+    doc = Document(
+        project_id=project_id, title=title, original=original, summary=summary
+    )
     await conn.execute(
         "INSERT INTO documents (id, project_id, title, summary, original) VALUES (?, ?, ?, ?, ?)",
         (doc.id, doc.project_id, doc.title, doc.summary, doc.original),
@@ -284,9 +292,7 @@ async def create_document(
     return doc
 
 
-async def list_documents(
-    conn: aiosqlite.Connection, project_id: str
-) -> list[Document]:
+async def list_documents(conn: aiosqlite.Connection, project_id: str) -> list[Document]:
     async with conn.execute(
         "SELECT id, project_id, title, summary, original, created_at FROM documents WHERE project_id = ? ORDER BY created_at DESC",
         (project_id,),

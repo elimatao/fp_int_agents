@@ -86,8 +86,11 @@ class NewProjectModal(ModalScreen[NewProjectResult | None]):
             yield Label("Conversational agent")
             yield self._radio(self._conv_agents, self._conv_agents[0], "conv-radio")
             yield Label("Memory agent")
-            yield self._radio(self._mem_agents, "simple"
-                              if "simple" in self._mem_agents else _NONE, "mem-radio")
+            yield self._radio(
+                self._mem_agents,
+                "simple" if "simple" in self._mem_agents else _NONE,
+                "mem-radio",
+            )
             yield Label("Ingestor")
             yield self._radio(self._ingestors, _NONE, "ingestor-radio")
             yield Label("System prompt")

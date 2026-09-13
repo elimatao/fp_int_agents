@@ -42,7 +42,11 @@ async def ingest_simple(
         [SystemMessage(content=_SUMMARY_SYSTEM_PROMPT), HumanMessage(content=text)]
     )
     await db.create_document(
-        conn, project_id=project.id, original=text, title=title, summary=str(response.content)
+        conn,
+        project_id=project.id,
+        original=text,
+        title=title,
+        summary=str(response.content),
     )
 
 
@@ -53,7 +57,9 @@ async def ingest_rag(
     conn: aiosqlite.Connection,
     title: str | None = None,
 ) -> None:
-    doc = await db.create_document(conn, project_id=project.id, original=text, title=title)
+    doc = await db.create_document(
+        conn, project_id=project.id, original=text, title=title
+    )
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=_CHUNK_SIZE, chunk_overlap=_CHUNK_OVERLAP
     )

@@ -121,9 +121,7 @@ class _ProjectRow(Widget):
                 self._project.name, self, id=f"name-project-{self._project.id}"
             )
             yield self._DeleteLabel(self._project, id=f"del-project-{self._project.id}")
-        yield self._IngestLabel(
-            self._project, id=f"ingest-project-{self._project.id}"
-        )
+        yield self._IngestLabel(self._project, id=f"ingest-project-{self._project.id}")
         yield ThreadList(self._project, self._threads, id=f"tl-{self._project.id}")
 
     def watch_collapsed(self, collapsed: bool) -> None:

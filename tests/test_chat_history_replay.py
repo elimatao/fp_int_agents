@@ -41,7 +41,9 @@ async def test_history_replay_renders_tool_call_bubble(tmp_path):
 
     db_path = str(tmp_path / "app.db")
     async with open_db(db_path) as db:
-        agent = build_agent(project, checkpointer=db.checkpointer, llm_config=app_cfg.llm)
+        agent = build_agent(
+            project, checkpointer=db.checkpointer, llm_config=app_cfg.llm
+        )
         await agent.ainvoke(
             {
                 "messages": [

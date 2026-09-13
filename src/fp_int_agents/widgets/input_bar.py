@@ -70,7 +70,9 @@ class InputBar(Widget):
         elif event.button.id == "chat-settings":
             refresh()
             self.post_message(
-                self.SettingsRequested(self._chat_model, self._active_tools, list_tools())
+                self.SettingsRequested(
+                    self._chat_model, self._active_tools, list_tools()
+                )
             )
 
     def _submit(self, text: str) -> None:

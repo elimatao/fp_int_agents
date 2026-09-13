@@ -69,7 +69,9 @@ class ThreadList(Widget):
 
         def on_click(self, event: Click) -> None:
             event.stop()
-            self.post_message(ThreadList.DeleteThread(self._del_thread_id, self._del_project_id))
+            self.post_message(
+                ThreadList.DeleteThread(self._del_thread_id, self._del_project_id)
+            )
 
     def __init__(self, project: Project, threads: list[Thread], **kwargs) -> None:
         super().__init__(**kwargs)

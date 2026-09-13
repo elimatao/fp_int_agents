@@ -30,6 +30,7 @@ def _fake_docs() -> list[Document]:
 # Query rewriter uses the LLM to expand the raw question
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_query_rewriter_expands_question(monkeypatch) -> None:
     """Rewriter node calls the LLM with the original question."""
@@ -68,6 +69,7 @@ async def test_query_rewriter_expands_question(monkeypatch) -> None:
 # Hybrid search is called with the rewritten query
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_hybrid_search_called_with_rewritten_query(monkeypatch) -> None:
     searched: list[str] = []
@@ -103,6 +105,7 @@ async def test_hybrid_search_called_with_rewritten_query(monkeypatch) -> None:
 # Reranker trims docs to TOP_K_RERANK
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_reranker_reduces_docs(monkeypatch) -> None:
     class FakeModel:
@@ -134,6 +137,7 @@ async def test_reranker_reduces_docs(monkeypatch) -> None:
 # Relevance judge passes a relevant answer straight to END
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 async def test_relevance_judge_passes_relevant_answer(monkeypatch) -> None:
     call_log: list[str] = []
@@ -153,7 +157,9 @@ async def test_relevance_judge_passes_relevant_answer(monkeypatch) -> None:
         def bind_tools(self, _tools):
             return self
 
-    monkeypatch.setattr(rag_agent, "get_chat_model", lambda **_: SequencedModel(next(models)))
+    monkeypatch.setattr(
+        rag_agent, "get_chat_model", lambda **_: SequencedModel(next(models))
+    )
     monkeypatch.setattr(rag_agent, "get_embedding_model", lambda **_: object())
     monkeypatch.setattr(rag_agent.vectorstore, "search", lambda *a, **kw: _fake_docs())
 
@@ -172,6 +178,7 @@ async def test_relevance_judge_passes_relevant_answer(monkeypatch) -> None:
 # ---------------------------------------------------------------------------
 # rewrite_count is capped at MAX_REWRITES even when judge always fails
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_rewrite_count_capped_at_max(monkeypatch) -> None:
@@ -223,6 +230,7 @@ async def test_rewrite_count_capped_at_max(monkeypatch) -> None:
 # ---------------------------------------------------------------------------
 # Graceful degradation when vector store is unavailable
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 async def test_rag_degrades_without_context(monkeypatch) -> None:
