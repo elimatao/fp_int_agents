@@ -5,7 +5,6 @@ import time
 from collections.abc import Generator
 
 import pytest
-
 from fp_int_agents import setup_asyncio_logging
 
 

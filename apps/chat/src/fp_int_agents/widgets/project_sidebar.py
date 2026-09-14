@@ -1,3 +1,5 @@
+from fp_int_agents.config import Project, Thread
+from fp_int_agents.widgets.thread_list import ThreadList
 from textual.app import ComposeResult
 from textual.containers import Horizontal, VerticalScroll
 from textual.events import Click
@@ -5,9 +7,6 @@ from textual.message import Message
 from textual.reactive import reactive
 from textual.widget import Widget
 from textual.widgets import Button
-
-from fp_int_agents.config import Project, Thread
-from fp_int_agents.widgets.thread_list import ThreadList
 
 
 class _ProjectRow(Widget):

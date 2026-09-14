@@ -1,11 +1,10 @@
 """Advanced RAG agent: query rewriter, hybrid search, reranker, generate, relevance judge."""
 
 import pytest
-from langchain_core.documents import Document
-from langchain_core.messages import AIMessage, HumanMessage
-
 from fp_int_agents.agents import rag_agent
 from fp_int_agents.config import Project, QueryConfig
+from langchain_core.documents import Document
+from langchain_core.messages import AIMessage, HumanMessage
 
 
 def _project(**kwargs) -> Project:

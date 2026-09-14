@@ -1,12 +1,11 @@
 """Tests for ThreadList and ProjectSidebar widgets."""
 
 import pytest
-from textual.app import App, ComposeResult
-from textual.widgets import ListView
-
 from fp_int_agents.config import Project, Thread
 from fp_int_agents.widgets.project_sidebar import ProjectSidebar, _ProjectRow
 from fp_int_agents.widgets.thread_list import ThreadList
+from textual.app import App, ComposeResult
+from textual.widgets import ListView
 
 
 def _project(name: str = "P") -> Project:

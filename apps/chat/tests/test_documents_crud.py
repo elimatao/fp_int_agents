@@ -1,7 +1,6 @@
 """documents table CRUD roundtrip."""
 
 import pytest
-
 from fp_int_agents.storage.db import (
     create_document,
     create_project,

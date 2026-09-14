@@ -1,7 +1,6 @@
 """Project.ingestor and init_config persist and reload."""
 
 import pytest
-
 from fp_int_agents.storage.db import create_project, get_project, open_db
 
 

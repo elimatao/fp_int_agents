@@ -2,16 +2,15 @@
 
 import pytest
 from conftest import get_model_id
-from langchain_core.messages import HumanMessage
-from langchain_core.tools import tool
-from textual.app import App, ComposeResult
-
 from fp_int_agents.agents.conv_agent_simple import build_agent
 from fp_int_agents.config import Project, QueryConfig, load_config
 from fp_int_agents.storage.db import open_db
 from fp_int_agents.tools.registry import register
 from fp_int_agents.widgets.chat import Chat
 from fp_int_agents.widgets.tool_call_bubble import ToolCallBubble
+from langchain_core.messages import HumanMessage
+from langchain_core.tools import tool
+from textual.app import App, ComposeResult
 
 TOOL_RESPONSE = "poooong"
 

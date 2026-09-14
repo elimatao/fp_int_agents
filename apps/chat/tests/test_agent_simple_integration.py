@@ -2,12 +2,11 @@
 
 import pytest
 from conftest import get_model_id
-from langchain_core.messages import HumanMessage
-from langchain_core.tools import tool
-
 from fp_int_agents.agents.registry import CONVERSATIONAL_AGENTS
 from fp_int_agents.config import QueryConfig, load_config
 from fp_int_agents.tools.registry import register
+from langchain_core.messages import HumanMessage
+from langchain_core.tools import tool
 
 TOOL_RESPONSE = "poooong"
 

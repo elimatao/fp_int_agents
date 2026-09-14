@@ -1,7 +1,6 @@
 """Thread settings (tools + chat_model) persist and reload correctly."""
 
 import pytest
-
 from fp_int_agents.storage.db import (
     create_project,
     create_thread,

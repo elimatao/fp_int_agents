@@ -1,10 +1,9 @@
+from fp_int_agents.config import Project, Thread
 from textual.app import ComposeResult
 from textual.events import Click
 from textual.message import Message
 from textual.widget import Widget
 from textual.widgets import Button, Label, ListItem, ListView
-
-from fp_int_agents.config import Project, Thread
 
 
 class ThreadList(Widget):

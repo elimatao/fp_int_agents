@@ -5,11 +5,11 @@ from pathlib import Path
 # Prevent PyTorch MPS from hoarding cached Metal memory
 os.environ["PYTORCH_MPS_HIGH_WATERMARK_RATIO"] = "0.0"
 
+import torch
+import uvicorn
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from sentence_transformers import CrossEncoder
-import torch
-import uvicorn
 
 DEFAULT_ADAPTER_PATH = str(
     Path(__file__).resolve().parents[2]

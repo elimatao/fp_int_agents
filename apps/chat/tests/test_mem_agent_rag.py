@@ -1,8 +1,6 @@
 """Tests for mem_agent_rag: chunk_messages_by_turns and DB helper."""
 
 import pytest
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
-
 from fp_int_agents.agents.mem_agent_rag import chunk_messages_by_turns
 from fp_int_agents.storage.db import (
     create_project,
@@ -11,6 +9,7 @@ from fp_int_agents.storage.db import (
     open_db,
     update_thread_memory_count,
 )
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 
 def _turn(human: str, ai: str) -> list:

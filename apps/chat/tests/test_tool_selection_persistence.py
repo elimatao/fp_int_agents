@@ -6,7 +6,6 @@ the sidebar at startup rather than the freshly-saved DB state.
 """
 
 import pytest
-
 from fp_int_agents.storage.db import (
     create_project,
     create_thread,

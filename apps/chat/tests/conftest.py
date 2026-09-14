@@ -1,9 +1,8 @@
 import pytest
 import pytest_asyncio
-from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
-
 from fp_int_agents.config import AppConfig, Project
 from fp_int_agents.llm.models import list_models
+from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 
 
 @pytest.fixture

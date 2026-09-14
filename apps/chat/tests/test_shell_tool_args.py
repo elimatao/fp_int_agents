@@ -1,7 +1,6 @@
 """JSON-defined shell tools must forward args to the script, not nest them under 'kwargs'."""
 
 import pytest
-
 from fp_int_agents.tools.registry import (
     JsonToolDefinition,
     _make_shell_tool,

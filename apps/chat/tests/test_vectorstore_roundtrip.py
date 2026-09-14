@@ -5,10 +5,9 @@ first use. Run with ``pytest -m network``.
 """
 
 import pytest
+from fp_int_agents.storage import vectorstore
 from langchain_core.embeddings import Embeddings
 from qdrant_client import QdrantClient
-
-from fp_int_agents.storage import vectorstore
 
 
 class FakeEmbeddings(Embeddings):

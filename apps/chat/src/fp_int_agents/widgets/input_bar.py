@@ -1,9 +1,8 @@
+from fp_int_agents.tools.registry import list_tools, refresh
 from textual.app import ComposeResult
 from textual.message import Message
 from textual.widget import Widget
 from textual.widgets import Button, Input
-
-from fp_int_agents.tools.registry import list_tools, refresh
 
 
 class InputBar(Widget):

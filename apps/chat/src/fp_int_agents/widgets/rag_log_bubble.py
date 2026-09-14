@@ -1,8 +1,7 @@
+from fp_int_agents.agents.agent_caller import _RAG_NODE_LABELS
 from textual.app import ComposeResult
 from textual.widget import Widget
 from textual.widgets import Static
-
-from fp_int_agents.agents.agent_caller import _RAG_NODE_LABELS
 
 
 class RagLogBubble(Widget):

@@ -5,11 +5,10 @@ from pathlib import Path
 
 import pytest
 from conftest import get_model_id
-from langchain_core.messages import HumanMessage
-from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
-
 from fp_int_agents.agents.conv_agent_simple import build_agent
 from fp_int_agents.config import QueryConfig, load_config
+from langchain_core.messages import HumanMessage
+from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 
 
 def _thread_cfg(thread_id: str, model_id: str) -> dict:

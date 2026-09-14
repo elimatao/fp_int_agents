@@ -1,11 +1,6 @@
 import asyncio
 from typing import TYPE_CHECKING, cast
 
-from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
-from textual.app import ComposeResult
-from textual.containers import VerticalScroll
-from textual.widget import Widget
-
 from fp_int_agents.agents.agent_caller import (
     RagStepFinished,
     RagStepStarted,
@@ -18,6 +13,10 @@ from fp_int_agents.agents.agent_caller import (
 )
 from fp_int_agents.config import QueryConfig
 from fp_int_agents.storage.db import get_project, get_thread, update_thread_settings
+from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
+from textual.app import ComposeResult
+from textual.containers import VerticalScroll
+from textual.widget import Widget
 
 from .input_bar import InputBar
 from .message_bubble import MessageBubble
