@@ -2,65 +2,55 @@
 
 A Textual TUI chat app with LangGraph, hybrid Qdrant retrieval, and local Apple Silicon model serving (MLX + BGE Reranker + LiteLLM).
 
-## Running the Project
-
-### 1. Unified Launch (Recommended)
-Starts all background model servers, waits for health checks, launches the TUI, and shuts down servers on exit:
+## Quickstart
+Optionally, set your huggingface API key (copy the root `config.toml.example` to `config.toml` for that and edit the latter one).
 ```bash
 uv run python launch.py
 ```
+Starts all background model servers, waits for health checks, launches the TUI, and shuts down servers on exit:
 
-### 2. Run Components Individually
 
-- **Model Servers (MLX + Reranker + LiteLLM):**
+## Running Components Individually
+
+- **Model Services (MLX fine-tuned & base, Reranker, Embeddings, LiteLLM proxy):**
   ```bash
-  # Uses ports: MLX=8000, Reranker=8001, LiteLLM=4000 (or custom LITELLM_PORT)
   bash services/model_server/serve.sh
   ```
-  *Or run them separately with custom ports:*
-  - **MLX Chat Model:** `uv run --project services/model_server python -m mlx_lm.server --model mlx-community/Qwen2.5-3B-Instruct-bf16 --adapter-path scripts/kleine_anfragen/adapters_lr_e_-4 --port 8000`
-  - **BGE Reranker:** `uv run --project services/model_server python services/model_server/serve_reranker.py --port 8001`
-  - **LiteLLM Proxy:** `uv run --project services/model_server litellm --config services/model_server/litellm_config.yaml --port <PORT>`
+  *Default ports: MLX fine-tuned `8000`, MLX base `8003`, Reranker `8001`, Embeddings `8002`, LiteLLM proxy `4000`.*
 
-- **Chat App Only (connects to whatever `llm.base_url` is configured in `config.toml`):**
+- **Chat App Only** (connects to configured `llm.base_url`):
   ```bash
   uv run --package fp-int-agents fp-int-agents
   ```
 
 - **Testing:**
   ```bash
-  uv run pytest -m "not network"   # Unit tests (offline)
-  uv run pytest                    # Full suite (requires live model endpoints)
+  uv run pytest apps/chat/tests/ -m "not network"   # Offline unit tests
+  
+  bash services/model_server/serve.sh
+  uv run pytest apps/chat/tests/                    # Full suite requires live model endpoints
   ```
 
 ---
 
 ## Configuration
 
-The configuration is cleanly split into **Service Endpoints (Root)** and **Application Defaults (App)**:
+Configuration is split between endpoint connections and application defaults:
 
-### 1. Service & Endpoint Configuration (`config.toml` at root)
-Defines where models and external services are hosted (`cp config.toml.example config.toml`):
-- `llm.base_url`: Target LLM endpoint (e.g. `"http://localhost:4000/v1"`, your existing proxy, or remote API).
-- `llm.api_key`: Authentication key for the endpoint (`"none"` for local proxies).
-- `reranker.url`: Cross-encoder reranker endpoint (default: `"http://127.0.0.1:8001/v1/rerank"`).
+- **Root Endpoints (`config.toml`):**
+  - `llm.base_url`: LLM proxy or server URL (e.g. `"http://localhost:4000/v1"`).
+  - `llm.api_key`: API key (`"none"` for local proxy).
+  - `llm.reranker_url`: Cross-encoder reranker endpoint (default: `"http://127.0.0.1:8001/v1/rerank"`).
+  - `huggingface.hf_key`: Optional HF token for model downloads.
 
-*Note: `launch.py` automatically reads this file to determine ports and health check targets.*
-
-### 2. App Defaults (`apps/chat/config.toml`)
-Defines chat application behavior (`cp apps/chat/config.toml.example apps/chat/config.toml`):
-- `defaults.chat_model`: Active model name (e.g. `"qwen-kleine-anfragen"`).
-- `defaults.embedding_model`: Text embedding model.
-- `defaults.agent`: Default agent type (`"simple"` or `"BundesRAG"`).
-- `defaults.db_path`: SQLite database path (default: `"data/app.db"`).
-
-### 2. Optional Local LiteLLM Proxy (`services/model_server/litellm_config.yaml`)
-If you choose to run the included local proxy:
-- Default port is set via `$LITELLM_PORT` (defaults to `4000`).
-- Routes `qwen-kleine-anfragen` to local `mlx_lm.server` on `:8000`.
-- Catch-all `*` can forward unmapped models to an upstream proxy via `UPSTREAM_LITELLM_URL` and `UPSTREAM_LITELLM_KEY`.
+- **App Defaults (`apps/chat/config.toml`):**
+  - `defaults.chat_model`: Active model name (e.g. `"qwen-kleine-anfragen"`).
+  - `defaults.embedding_model`: Embedding model name (e.g. `"multilingual-e5-small"`).
+  - `defaults.agent`: Default agent (`"simple"` or `"BundesRAG"`).
+  - `defaults.mem_agent`: Memory agent type (`"simple"` or `"BundesRAG"`).
+  - `defaults.db_path`: SQLite database path (default: `"data/app.db"`).
 
 ---
 
-## Documentation
-See architecture notes and diagrams in the [`docs/`](docs/) directory.
+## Further Documentation
+See finetuning information and the RAG agent diagram in the [`docs/`](docs/) directory.
