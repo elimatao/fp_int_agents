@@ -49,8 +49,8 @@ Defines where models and external services are hosted (`cp config.toml.example c
 
 ### 2. App Defaults (`apps/chat/config.toml`)
 Defines chat application behavior (`cp apps/chat/config.toml.example apps/chat/config.toml`):
-- `defaults.chat_model`: Active model name (e.g. `"qwen-kleine-anfragen"`, `"llama3.2"`).
-- `defaults.embedding_model`: Text embedding model (default: `"nomic-embed-text"`).
+- `defaults.chat_model`: Active model name (e.g. `"qwen-kleine-anfragen"`).
+- `defaults.embedding_model`: Text embedding model.
 - `defaults.agent`: Default agent type (`"simple"` or `"rag"`).
 - `defaults.db_path`: SQLite database path (default: `"data/app.db"`).
 

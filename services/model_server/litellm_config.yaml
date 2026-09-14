@@ -16,16 +16,23 @@ model_list:
       api_base: http://127.0.0.1:8000/v1
       api_key: none
 
-  # Base model (if running a separate base instance on :8002)
-  - model_name: qwen-base
+  # Embeddings model (served on :8002)
+  - model_name: multilingual-e5-small
     litellm_params:
-      model: openai/mlx-community/Qwen2.5-3B-Instruct-bf16
+      model: openai/intfloat/multilingual-e5-small
       api_base: http://127.0.0.1:8002/v1
       api_key: none
 
+  # Base model (if running a separate base instance on :8003)
+  # - model_name: qwen-base
+  #   litellm_params:
+  #     model: openai/mlx-community/Qwen2.5-3B-Instruct-bf16
+  #     api_base: http://127.0.0.1:8003/v1
+  #     api_key: none
+
   # Forward any other models to upstream proxy if UPSTREAM_LITELLM_URL is set
-  - model_name: "*"
-    litellm_params:
-      model: openai/*
-      api_base: os.environ/UPSTREAM_LITELLM_URL
-      api_key: os.environ/UPSTREAM_LITELLM_KEY
+  #- model_name: "*"
+  #  litellm_params:
+  #    model: openai/*
+  #    api_base: os.environ/UPSTREAM_LITELLM_URL
+  #    api_key: os.environ/UPSTREAM_LITELLM_KEY

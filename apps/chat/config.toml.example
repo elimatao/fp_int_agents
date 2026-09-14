@@ -1,0 +1,10 @@
+# Chat application defaults template
+# Copy this file to apps/chat/config.toml to customize defaults.
+
+[defaults]
+chat_model = "llama3.2"
+embedding_model = "multilingual-e5-small"
+agent = "simple"
+mem_agent = "simple"
+db_path = "data/app.db"
+

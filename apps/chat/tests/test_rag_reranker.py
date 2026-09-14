@@ -12,7 +12,7 @@ def _project(**kwargs) -> Project:
         agent="rag",
         chat_model="default_model",
         init_config={
-            "embedding_model": "nomic-embed-text",
+            "embedding_model": "multilingual-e5-small",
             "reranker_url": "http://127.0.0.1:8001/v1/rerank",
         },
         **kwargs,
@@ -20,7 +20,9 @@ def _project(**kwargs) -> Project:
 
 
 def _qc(project: Project) -> QueryConfig:
-    return QueryConfig(thread_id="t1", project_id=project.id, chat_model="default_model")
+    return QueryConfig(
+        thread_id="t1", project_id=project.id, chat_model="default_model"
+    )
 
 
 class FakeChatModel:

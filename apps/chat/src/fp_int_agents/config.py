@@ -66,13 +66,13 @@ class QueryConfig(BaseModel):
 
 
 class LlmConfig(BaseModel):
-    base_url: str = "http://localhost:11434/v1"
-    api_key: str = "ollama"
+    base_url: str = "http://localhost:4000/v1"
+    api_key: str = "none"
 
 
 class AppConfig(BaseModel):
-    chat_model: str | None = None
-    embedding_model: str = "nomic-embed-text"
+    chat_model: str | None = "qwen-kleine-anfragen"
+    embedding_model: str = "multilingual-e5-small"
     reranker_url: str = "http://127.0.0.1:8001/v1/rerank"
     agent: str = "simple"
     mem_agent: str | None = None
@@ -115,13 +115,8 @@ async def load_config() -> AppConfig:
         raw_root = _load_toml(root_toml)
         llm_raw = raw_root.get("llm", {})
 
-        # Extract reranker url
-        if "reranker" in raw_root and isinstance(raw_root["reranker"], dict):
-            root_urls["reranker_url"] = raw_root["reranker"].get("url")
-        elif "reranker_url" in raw_root.get("llm", {}):
+        if "reranker_url" in raw_root.get("llm", {}):
             root_urls["reranker_url"] = raw_root["llm"]["reranker_url"]
-        elif "reranker_url" in raw_root:
-            root_urls["reranker_url"] = raw_root["reranker_url"]
 
         # Backwards-compatibility: if defaults were in root config.toml and not yet in app config
         if not app_defaults and "defaults" in raw_root:

@@ -12,7 +12,7 @@ def _project(**kwargs) -> Project:
         name="R",
         agent="rag",
         chat_model="llama3.2",
-        init_config={"embedding_model": "nomic-embed-text"},
+        init_config={"embedding_model": "multilingual-e5-small"},
         **kwargs,
     )
 

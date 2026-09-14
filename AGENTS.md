@@ -1,6 +1,6 @@
 # fp-int-agents
 
-A Textual TUI chat app with uv + LangGraph + Ollama + litellm.
+A Textual TUI chat app with uv + LangGraph + litellm.
 
 ## Conversations
 - Be very concise
@@ -15,7 +15,7 @@ A Textual TUI chat app with uv + LangGraph + Ollama + litellm.
 - Runtime: uv
 - TUI: Textual
 - Conversation Graph: LangGraph
-- LLM client: litellm, connects with local models via ollama, but also has support for remote models
+- LLM client: litellm, connects with local models via custom servers such as mlx-lm over a litellm proxy, but also has support for remote models (any openai-compatible, also ollama)
 - Checkpointer: AsyncSqliteSaver (for now)
 - Deployment: Docker Compose
 

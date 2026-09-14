@@ -9,7 +9,7 @@ from fp_int_agents.storage import vectorstore
 
 _DEFAULT_CHUNK_TURNS = 5
 _DEFAULT_OVERLAP_TURNS = 1
-_DEFAULT_EMBEDDING_MODEL = "nomic-embed-text"
+_DEFAULT_EMBEDDING_MODEL = "multilingual-e5-small"
 
 
 def chunk_messages_by_turns(

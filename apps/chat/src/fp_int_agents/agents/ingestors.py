@@ -23,7 +23,7 @@ _SUMMARY_SYSTEM_PROMPT = (
 
 _CHUNK_SIZE = 1000
 _CHUNK_OVERLAP = 150
-_DEFAULT_EMBEDDING_MODEL = "nomic-embed-text"
+_DEFAULT_EMBEDDING_MODEL = "multilingual-e5-small"
 
 
 async def ingest_simple(

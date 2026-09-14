@@ -8,7 +8,7 @@ class ModelInfo:
     id: str
 
 
-async def list_models(base_url: str, api_key: str = "ollama") -> list[ModelInfo]:
+async def list_models(base_url: str, api_key: str = "none") -> list[ModelInfo]:
     """Fetch available models from an OpenAI-compatible /models endpoint."""
     headers = {"Authorization": f"Bearer {api_key}"}
     url = base_url.rstrip("/") + "/models"

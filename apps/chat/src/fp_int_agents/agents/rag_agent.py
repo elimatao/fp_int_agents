@@ -46,7 +46,7 @@ _JUDGE_PROMPT = (
 
 
 class RagAgentInitConfig(BaseModel):
-    embedding_model: str = "nomic-embed-text"
+    embedding_model: str = "multilingual-e5-small"
     reranker_url: str = "http://127.0.0.1:8001/v1/rerank"
 
 
