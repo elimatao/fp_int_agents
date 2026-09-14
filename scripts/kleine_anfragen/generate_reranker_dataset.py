@@ -59,7 +59,9 @@ def generate_examples(docs: list[dict]) -> list[dict]:
 
             if n > 1:
                 negative_answer = pairs[(i + 1) % n]["answer"]
-                examples.append({"query": query, "passage": negative_answer, "label": 0})
+                examples.append(
+                    {"query": query, "passage": negative_answer, "label": 0}
+                )
 
     return examples
 
@@ -91,16 +93,32 @@ def write_examples(examples: list[dict], path: Path) -> None:
 def report(name: str, examples: list[dict]) -> None:
     pos = sum(1 for e in examples if e["label"] == 1)
     neg = sum(1 for e in examples if e["label"] == 0)
-    print(f"{name}: {len(examples)} examples ({pos} positive, {neg} negative)", file=sys.stderr)
+    print(
+        f"{name}: {len(examples)} examples ({pos} positive, {neg} negative)",
+        file=sys.stderr,
+    )
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Generate reranker training dataset")
     parser.add_argument("input", type=Path, help="Input JSONL file with QA pairs")
-    parser.add_argument("output", type=Path, help="Output JSONL file (with --split: output directory)")
-    parser.add_argument("--split", action="store_true", help="Split into train/val/test (output must be a directory)")
-    parser.add_argument("--train-ratio", type=float, default=0.8, help="Fraction of documents for training (default: 0.8)")
-    parser.add_argument("--seed", type=int, default=42, help="Random seed for shuffling (default: 42)")
+    parser.add_argument(
+        "output", type=Path, help="Output JSONL file (with --split: output directory)"
+    )
+    parser.add_argument(
+        "--split",
+        action="store_true",
+        help="Split into train/val/test (output must be a directory)",
+    )
+    parser.add_argument(
+        "--train-ratio",
+        type=float,
+        default=0.8,
+        help="Fraction of documents for training (default: 0.8)",
+    )
+    parser.add_argument(
+        "--seed", type=int, default=42, help="Random seed for shuffling (default: 42)"
+    )
     args = parser.parse_args()
 
     docs = load_documents(args.input)
@@ -124,7 +142,11 @@ def main() -> None:
     )
 
     args.output.mkdir(parents=True, exist_ok=True)
-    for name, split_docs in [("train", train_docs), ("val", val_docs), ("test", test_docs)]:
+    for name, split_docs in [
+        ("train", train_docs),
+        ("val", val_docs),
+        ("test", test_docs),
+    ]:
         out_path = args.output / f"{name}.jsonl"
         examples = generate_examples(split_docs)
         report(name, examples)

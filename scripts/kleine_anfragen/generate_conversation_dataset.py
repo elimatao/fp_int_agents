@@ -23,12 +23,14 @@ def generate_examples(docs: list[dict]) -> list[dict]:
             question = clean_question(pair["question"])
             answer = pair["answer"]
             if question and answer:
-                examples.append({
-                    "messages": [
-                        {"role": "user", "content": question},
-                        {"role": "assistant", "content": answer},
-                    ]
-                })
+                examples.append(
+                    {
+                        "messages": [
+                            {"role": "user", "content": question},
+                            {"role": "assistant", "content": answer},
+                        ]
+                    }
+                )
     return examples
 
 
@@ -39,12 +41,27 @@ def write_examples(examples: list[dict], path: Path) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Generate conversational fine-tuning dataset")
+    parser = argparse.ArgumentParser(
+        description="Generate conversational fine-tuning dataset"
+    )
     parser.add_argument("input", type=Path, help="Input JSONL file with QA pairs")
-    parser.add_argument("output", type=Path, help="Output JSONL file (with --split: output directory)")
-    parser.add_argument("--split", action="store_true", help="Split into train/valid/test (output must be a directory)")
-    parser.add_argument("--train-ratio", type=float, default=0.8, help="Fraction of documents for training (default: 0.8)")
-    parser.add_argument("--seed", type=int, default=42, help="Random seed (default: 42)")
+    parser.add_argument(
+        "output", type=Path, help="Output JSONL file (with --split: output directory)"
+    )
+    parser.add_argument(
+        "--split",
+        action="store_true",
+        help="Split into train/valid/test (output must be a directory)",
+    )
+    parser.add_argument(
+        "--train-ratio",
+        type=float,
+        default=0.8,
+        help="Fraction of documents for training (default: 0.8)",
+    )
+    parser.add_argument(
+        "--seed", type=int, default=42, help="Random seed (default: 42)"
+    )
     args = parser.parse_args()
 
     docs = load_documents(args.input)
