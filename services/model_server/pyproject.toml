@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "LiteLLM proxy and model serving service"
 readme = "README.md"
 authors = [
-    { name = "Elia Doumerc", email = "elia.doumerc@sap.com" }
+    { name = "Elia Doumerc" }
 ]
 requires-python = ">=3.13"
 dependencies = [

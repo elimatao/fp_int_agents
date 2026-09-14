@@ -1,7 +1,4 @@
-# ToDos 
-## Presentation
-- think of feature showcase order
-- explain architecture with diagrams
+# Features
 
 ## Submission
 - record video
@@ -14,6 +11,13 @@
 - flexible multi-layer Configuration
 - Framework: Textual TUI
 - conversation summarization (essence extraction mechanism), should be agent-independent, i.e., a function should be defined, which will be called on some hook, i.e., chat switched
+
+## Presentation Script
+welcome to BundesRAG, an application that enables you to closely experience our government by directly talking to it!
+
+
+
+
 
 
 ## Features
@@ -55,7 +59,7 @@
     - showcase agent-binding (for type of conversation )
     - update mutable attributes
 
-- Memory / GraphRAG mechanism
+- Memory mechanism
     - recall prior information from groups of chats / Project folder
 
     - Add a dense conversation summarization mechanism that creates chunk embeddings of the conversation incrementally (don't recompute)

@@ -75,6 +75,8 @@ class AppConfig(BaseModel):
     embedding_model: str = "nomic-embed-text"
     reranker_url: str = "http://127.0.0.1:8001/v1/rerank"
     agent: str = "simple"
+    mem_agent: str | None = None
+    ingestor: str | None = None
     llm: LlmConfig = LlmConfig()
     db_path: str = "data/app.db"
 
@@ -87,18 +89,61 @@ def _load_toml(path: pathlib.Path) -> dict[str, Any]:
 async def load_config() -> AppConfig:
     from fp_int_agents.llm.models import list_models
 
-    override_path = pathlib.Path("config.toml")
-    if not override_path.exists():
-        cfg = AppConfig()
-    else:
-        raw = _load_toml(override_path)
-        llm_raw = raw.pop("llm", {})
-        defaults = raw.pop("defaults", {})
-        cfg = AppConfig.model_validate({**defaults, "llm": llm_raw})
+    # 1. Load app-specific defaults from apps/chat/config.toml (or local config.toml if in apps/chat/)
+    app_toml = pathlib.Path("apps/chat/config.toml")
+    if (
+        not app_toml.exists()
+        and pathlib.Path("config.toml").exists()
+        and not pathlib.Path("apps").exists()
+    ):
+        app_toml = pathlib.Path("config.toml")
+
+    app_defaults: dict[str, Any] = {}
+    if app_toml.exists():
+        raw_app = _load_toml(app_toml)
+        app_defaults = raw_app.get("defaults", raw_app)
+
+    # 2. Load root-level URLs / endpoints from root config.toml
+    root_toml = pathlib.Path("config.toml")
+    if not root_toml.exists() and pathlib.Path("../../config.toml").exists():
+        root_toml = pathlib.Path("../../config.toml")
+
+    llm_raw: dict[str, Any] = {}
+    root_urls: dict[str, Any] = {}
+
+    if root_toml.exists():
+        raw_root = _load_toml(root_toml)
+        llm_raw = raw_root.get("llm", {})
+
+        # Extract reranker url
+        if "reranker" in raw_root and isinstance(raw_root["reranker"], dict):
+            root_urls["reranker_url"] = raw_root["reranker"].get("url")
+        elif "reranker_url" in raw_root.get("llm", {}):
+            root_urls["reranker_url"] = raw_root["llm"]["reranker_url"]
+        elif "reranker_url" in raw_root:
+            root_urls["reranker_url"] = raw_root["reranker_url"]
+
+        # Backwards-compatibility: if defaults were in root config.toml and not yet in app config
+        if not app_defaults and "defaults" in raw_root:
+            app_defaults = raw_root["defaults"]
+
+    root_urls = {k: v for k, v in root_urls.items() if v is not None}
+
+    merged = {
+        **app_defaults,
+        **root_urls,
+    }
+    if llm_raw:
+        merged["llm"] = llm_raw
+
+    cfg = AppConfig.model_validate(merged)
 
     if cfg.chat_model is None:
-        models = await list_models(cfg.llm.base_url, cfg.llm.api_key)
-        if models:
-            cfg.chat_model = models[0].id
+        try:
+            models = await list_models(cfg.llm.base_url, cfg.llm.api_key)
+            if models:
+                cfg.chat_model = models[0].id
+        except Exception:
+            pass
 
     return cfg

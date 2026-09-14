@@ -1,1 +1,0 @@
-Hello, i am the CEO of Alpha Inc and my name is Samson.

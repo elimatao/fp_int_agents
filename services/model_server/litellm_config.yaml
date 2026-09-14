@@ -1,5 +1,5 @@
 # LiteLLM Proxy Configuration for fp-int-agents
-# Runs on port 6655 by default
+# Port is specified at launch (e.g., via $LITELLM_PORT or --port, defaults to 4000)
 
 model_list:
   # Fine-tuned MLX Conversation Model (served on :8000)
