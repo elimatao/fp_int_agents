@@ -27,6 +27,7 @@ def register_ping_tool():
     register(ping)
 
 
+@pytest.mark.network
 @pytest.mark.asyncio
 async def test_call_agent_emits_tool_events(project_config, memory_checkpointer):
     app_cfg = await load_config()

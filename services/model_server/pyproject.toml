@@ -1,0 +1,26 @@
+[project]
+name = "model-server"
+version = "0.1.0"
+description = "LiteLLM proxy and model serving service"
+readme = "README.md"
+authors = [
+    { name = "Elia Doumerc", email = "elia.doumerc@sap.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.115.0",
+    "httpx>=0.27.0",
+    "litellm[proxy]>=1.40.0",
+    "mlx-lm>=0.31.3",
+    "peft>=0.12.0",
+    "sentence-transformers>=3.0.0",
+    "torch>=2.4.0",
+    "uvicorn>=0.30.0",
+]
+
+[tool.uv]
+package = false
+
+[build-system]
+requires = ["uv_build>=0.12.3,<0.13.0"]
+build-backend = "uv_build"

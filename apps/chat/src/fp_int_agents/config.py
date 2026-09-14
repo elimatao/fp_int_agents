@@ -73,6 +73,7 @@ class LlmConfig(BaseModel):
 class AppConfig(BaseModel):
     chat_model: str | None = None
     embedding_model: str = "nomic-embed-text"
+    reranker_url: str = "http://127.0.0.1:8001/v1/rerank"
     agent: str = "simple"
     llm: LlmConfig = LlmConfig()
     db_path: str = "data/app.db"

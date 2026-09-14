@@ -1,34 +1,18 @@
 [project]
-name = "fp-int-agents"
+name = "fp-int-agents-workspace"
 version = "0.1.0"
-description = "Add your description here"
+description = "Textual TUI chat app with uv + LangGraph + LiteLLM workspace"
 readme = "README.md"
-authors = [
-    { name = "Elia Doumerc", email = "elia.doumerc@sap.com" }
-]
 requires-python = ">=3.13"
-dependencies = [
-    "fastembed>=0.4.2",
-    "langchain-openai>=1.5.1",
-    "langchain-qdrant>=1.1.0",
-    "langchain-text-splitters>=0.3.0",
-    "langgraph>=1.2.11",
-    "langgraph-checkpoint-sqlite>=3.1.1",
-    "mlx-lm>=0.31.3",
-    "pypdf>=5.0.0",
-    "textual>=8.2.8",
-]
 
-[project.scripts]
-fp-int-agents = "fp_int_agents:main"
-
-[build-system]
-requires = ["uv_build>=0.12.3,<0.13.0"]
-build-backend = "uv_build"
+[tool.uv.workspace]
+members = ["apps/chat"]
+exclude = ["services/model_server"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 markers = ["network: needs model download / live endpoint"]
+pythonpath = ["apps/chat/src", "."]
 
 [dependency-groups]
 dev = [

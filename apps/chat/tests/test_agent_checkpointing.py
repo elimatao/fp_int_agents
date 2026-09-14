@@ -23,6 +23,7 @@ def _thread_cfg(thread_id: str, model_id: str) -> dict:
     }
 
 
+@pytest.mark.network
 @pytest.mark.asyncio
 async def test_checkpoint_persists_history_across_turns(project_config) -> None:
     app_cfg = await load_config()
@@ -57,6 +58,7 @@ async def test_checkpoint_persists_history_across_turns(project_config) -> None:
         Path(db_path).unlink(missing_ok=True)
 
 
+@pytest.mark.network
 @pytest.mark.asyncio
 async def test_checkpoint_isolates_different_threads(project_config) -> None:
     app_cfg = await load_config()

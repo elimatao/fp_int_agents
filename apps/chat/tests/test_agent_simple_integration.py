@@ -23,6 +23,7 @@ def register_ping_tool():
     register(ping)
 
 
+@pytest.mark.network
 @pytest.mark.asyncio
 async def test_agent_calls_tool_and_returns_response(project_config):
     app_cfg = await load_config()

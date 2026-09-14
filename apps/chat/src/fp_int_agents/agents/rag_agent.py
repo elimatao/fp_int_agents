@@ -11,6 +11,7 @@ import operator
 from typing import Annotated, Literal
 
 import aiosqlite
+import httpx
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_core.language_models import LanguageModelInput
@@ -46,6 +47,7 @@ _JUDGE_PROMPT = (
 
 class RagAgentInitConfig(BaseModel):
     embedding_model: str = "nomic-embed-text"
+    reranker_url: str = "http://127.0.0.1:8001/v1/rerank"
 
 
 class RagAgentConfig(BaseModel):
@@ -132,6 +134,29 @@ def build_agent(
 
     async def reranker(state: AgentState, config: RunnableConfig) -> dict:
         docs = state.get("documents") or []
+        if not docs:
+            return {"documents": []}
+
+        if init.reranker_url:
+            try:
+                async with httpx.AsyncClient(timeout=5.0) as client:
+                    resp = await client.post(
+                        init.reranker_url,
+                        json={
+                            "query": state["query"],
+                            "documents": [d.page_content for d in docs],
+                            "top_n": TOP_K_RERANK,
+                        },
+                    )
+                    resp.raise_for_status()
+                    results = resp.json().get("results", [])
+                    if results:
+                        ranked_docs = [docs[item["index"]] for item in results]
+                        return {"documents": ranked_docs}
+            except Exception:
+                pass
+
+        # Fallback to lexical score if reranker service unavailable or not configured
         query_terms = set(state["query"].lower().split())
 
         def _score(doc: Document) -> int:

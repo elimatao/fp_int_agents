@@ -1,0 +1,29 @@
+[project]
+name = "fp-int-agents"
+version = "0.1.0"
+description = "Textual TUI chat app with uv + LangGraph + LiteLLM"
+readme = "README.md"
+authors = [
+    { name = "Elia Doumerc" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "aiosqlite>=0.20.0",
+    "fastembed>=0.4.2",
+    "httpx>=0.27.0",
+    "langchain-openai>=1.5.1",
+    "langchain-qdrant>=1.1.0",
+    "langchain-text-splitters>=0.3.0",
+    "langgraph>=1.2.11",
+    "langgraph-checkpoint-sqlite>=3.1.1",
+    "pypdf>=5.0.0",
+    "textual>=8.2.8",
+]
+
+[project.scripts]
+fp-int-agents = "fp_int_agents:main"
+
+[build-system]
+requires = ["uv_build>=0.12.3,<0.13.0"]
+build-backend = "uv_build"
+
