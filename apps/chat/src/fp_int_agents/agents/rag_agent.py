@@ -24,6 +24,13 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from fp_int_agents.config import LlmConfig, Project, QueryConfig
+
+DEFAULT_SYSTEM_PROMPT = (
+    "Sie sind ein zuständiger Sachbearbeiter. "
+    "Beantworten Sie Anfragen stets in einem formellen, bürokratischen Amtsdeutsch. "
+    "Nutzen Sie also verschachtelte Sätze, Nominalstil, Passivkonstruktionen, "
+    "und eine distanzierte, unpersönliche Sachlichkeit."
+)
 from fp_int_agents.llm.client import get_chat_model, get_embedding_model
 from fp_int_agents.storage import vectorstore
 from fp_int_agents.tools.registry import dispatch, get_tools
@@ -175,12 +182,7 @@ def build_agent(
     async def generate(state: AgentState, config: RunnableConfig) -> dict:
         docs = state.get("documents") or []
         context = "\n\n".join(f"- {d.page_content}" for d in docs)
-        base = project.system_prompt or (
-            "Sie sind ein zuständiger Sachbearbeiter. "
-            "Beantworten Sie Anfragen stets in einem formellen, bürokratischen Amtsdeutsch. "
-            "Nutzen Sie also verschachtelte Sätze, Nominalstil, Passivkonstruktionen, "
-            "und eine distanzierte, unpersönliche Sachlichkeit."
-        )
+        base = project.system_prompt or DEFAULT_SYSTEM_PROMPT
         system = (
             f"{base}\n\n## Retrieved context\n"
             "Use the following retrieved passages to answer if relevant:\n"

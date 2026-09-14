@@ -1,13 +1,19 @@
 from dataclasses import dataclass
 
+from fp_int_agents.agents.rag_agent import (
+    DEFAULT_SYSTEM_PROMPT as _BUNDESRAG_SYSTEM_PROMPT,
+)
 from textual.app import ComposeResult
 from textual.containers import Container
 from textual.screen import ModalScreen
 from textual.widgets import Button, Input, Label, RadioButton, RadioSet, TextArea
 
-_DEFAULT_SYSTEM_PROMPT = "You are a helpful assistant."
-
 _PROJECT_TYPES = ["simple", "BundesRAG"]
+
+_DEFAULT_SYSTEM_PROMPTS: dict[str, str] = {
+    "simple": "You are a helpful assistant.",
+    "BundesRAG": _BUNDESRAG_SYSTEM_PROMPT,
+}
 
 
 @dataclass
@@ -70,10 +76,15 @@ class NewProjectModal(ModalScreen[NewProjectResult | None]):
                 id="type-radio",
             )
             yield Label("System prompt")
-            yield TextArea(_DEFAULT_SYSTEM_PROMPT, id="system-prompt")
+            yield TextArea(_DEFAULT_SYSTEM_PROMPTS[_PROJECT_TYPES[0]], id="system-prompt")
             with Container(classes="buttons"):
                 yield Button("Cancel", variant="default", id="cancel")
                 yield Button("Create", variant="primary", id="confirm")
+
+    def on_radio_set_changed(self, event: RadioSet.Changed) -> None:
+        agent = str(event.pressed.label)
+        prompt = _DEFAULT_SYSTEM_PROMPTS.get(agent, "")
+        self.query_one("#system-prompt", TextArea).load_text(prompt)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "confirm":
