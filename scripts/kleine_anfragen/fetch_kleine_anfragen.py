@@ -20,7 +20,7 @@ from pathlib import Path
 import httpx
 
 BASE_URL = "https://search.dip.bundestag.de/api/v1"
-REQUEST_DELAY = 1.0  # seconds between requests
+REQUEST_DELAY = 0.5  # seconds between requests
 VORGANG_PAGE_SIZE = 100
 VORGANGSPOSITION_PAGE_SIZE = 100
 
@@ -129,8 +129,20 @@ def fetch_kleine_anfragen(
     emitted = 0
     scanned = 0
 
+    # Load already-indexed pdf filenames to skip re-fetching
+    already_fetched: set[str] = set()
+    if index_path.exists():
+        with open(index_path, encoding="utf-8") as f:
+            for line in f:
+                try:
+                    already_fetched.add(json.loads(line)["pdf_file"])
+                except (json.JSONDecodeError, KeyError):
+                    pass
+        emitted = len(already_fetched)
+        print(f"Resuming: {emitted} records already in index.")
+
     with (
-        open(index_path, "w", encoding="utf-8") as index,
+        open(index_path, "a", encoding="utf-8") as index,
         httpx.Client(timeout=60, headers=auth) as client,
     ):
         while True:
@@ -164,6 +176,8 @@ def fetch_kleine_anfragen(
 
                 doc_nr = antwort.get("dokumentnummer", antwort_id).replace("/", "-")
                 pdf_filename = f"{doc_nr}.pdf"
+                if pdf_filename in already_fetched:
+                    continue
                 if not download_pdf(client, pdf_url, pdf_dir / pdf_filename):
                     print(f"  [{scanned}/{total}] PDF not yet available: {pdf_url}")
                     continue
@@ -224,7 +238,7 @@ def main() -> None:
         required=False,
         metavar="DIR",
         default="data",
-        help="Output directory (will be created if needed)",
+        help="Output directory, defaults to data/ (will be created if needed)",
     )
     args = parser.parse_args()
 
