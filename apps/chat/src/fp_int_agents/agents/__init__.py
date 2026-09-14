@@ -11,6 +11,6 @@ from fp_int_agents.agents.registry import (
 )
 
 register_conversational_agent("simple", build_simple_conv_agent)
-register_conversational_agent("rag", build_rag_conv_agent)
+register_conversational_agent("BundesRAG", build_rag_conv_agent)
 register_memory_agent("simple", simple_mem_fn)
-register_memory_agent("rag", rag_mem_fn)
+register_memory_agent("BundesRAG", rag_mem_fn)

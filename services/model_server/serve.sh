@@ -15,11 +15,18 @@ RERANKER_PORT="${RERANKER_PORT:-8001}"
 EMBEDDINGS_PORT="${EMBEDDINGS_PORT:-8002}"
 LITELLM_PORT="${LITELLM_PORT:-4000}"
 
-echo "==> Starting MLX Model Server on :${MLX_PORT}..."
+BASE_PORT="${BASE_PORT:-8003}"
+
+echo "==> Starting MLX Model Server (fine-tuned) on :${MLX_PORT}..."
 uv run --project services/model_server python -m mlx_lm.server \
-  --model mlx-community/Qwen2.5-3B-Instruct-bf16 \
+  --model mlx-community/Qwen2.5-3B-Instruct-4bit \
   --adapter-path scripts/kleine_anfragen/adapters_lr_e_-4 \
   --port "$MLX_PORT" >"$LOG_DIR/mlx.log" 2>&1 &
+
+echo "==> Starting MLX Model Server (base) on :${BASE_PORT}..."
+uv run --project services/model_server python -m mlx_lm.server \
+  --model mlx-community/Qwen2.5-3B-Instruct-4bit \
+  --port "$BASE_PORT" >"$LOG_DIR/mlx_base.log" 2>&1 &
 
 echo "==> Starting BGE Reranker Service on :${RERANKER_PORT}..."
 uv run --project services/model_server python services/model_server/serve_reranker.py \

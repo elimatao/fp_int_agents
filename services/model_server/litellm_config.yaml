@@ -5,15 +5,22 @@ model_list:
   # Fine-tuned MLX Conversation Model (served on :8000)
   - model_name: qwen-kleine-anfragen
     litellm_params:
-      model: openai/mlx-community/Qwen2.5-3B-Instruct-bf16
+      model: openai/mlx-community/Qwen2.5-3B-Instruct-4bit
       api_base: http://127.0.0.1:8000/v1
       api_key: none
 
   # Default model alias pointing to the fine-tuned model
   - model_name: default_model
     litellm_params:
-      model: openai/mlx-community/Qwen2.5-3B-Instruct-bf16
+      model: openai/mlx-community/Qwen2.5-3B-Instruct-4bit
       api_base: http://127.0.0.1:8000/v1
+      api_key: none
+
+  # Base model without adapter (served on :8003)
+  - model_name: qwen-base
+    litellm_params:
+      model: openai/mlx-community/Qwen2.5-3B-Instruct-4bit
+      api_base: http://127.0.0.1:8003/v1
       api_key: none
 
   # Embeddings model (served on :8002)
@@ -22,13 +29,6 @@ model_list:
       model: openai/intfloat/multilingual-e5-small
       api_base: http://127.0.0.1:8002/v1
       api_key: none
-
-  # Base model (if running a separate base instance on :8003)
-  # - model_name: qwen-base
-  #   litellm_params:
-  #     model: openai/mlx-community/Qwen2.5-3B-Instruct-bf16
-  #     api_base: http://127.0.0.1:8003/v1
-  #     api_key: none
 
   # Forward any other models to upstream proxy if UPSTREAM_LITELLM_URL is set
   #- model_name: "*"

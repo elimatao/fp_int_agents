@@ -33,15 +33,23 @@ TOP_K_RERANK = 5
 MAX_REWRITES = 2
 
 _REWRITER_PROMPT = (
-    "You are a query rewriter for a RAG system. "
-    "Rewrite the user's question to be clearer and more specific for document retrieval. "
-    "Output ONLY the improved query, nothing else."
+    "Formuliere die Frage des Nutzers als präzise Suchanfrage für ein deutsches Parlamentsdokumentenarchiv um. "
+    "Nutze Schlüsselwörter, er Abkürzungen, mache implizite Konzepte explizit. "
+    "Gib NUR die umformulierte Suchanfrage aus.\n\n"
+    "Frage: Wann wurde das Digitalisierungsgesetz verabschiedet?\n"
+    "Suchanfrage: Digitalisierungsgesetz Verabschiedung Datum Bundesrat Bundestag\n\n"
+    "Frage: What did the government say about refugee housing?\n"
+    "Suchanfrage: Bundesregierung Flüchtlingsunterkünfte Unterbringung Asylbewerber Stellungnahme"
 )
 
 _JUDGE_PROMPT = (
-    "You are a relevance judge. Given the question and the answer, decide if the answer "
-    "adequately addresses the question using the retrieved context. "
-    "Reply with exactly one word: 'relevant' or 'not_relevant'."
+    "Beantwortet die Antwort die gestellte Frage ausreichend? Antworte nur mit 'ja' oder 'nein'.\n\n"
+    "Frage: Was ist die Hauptstadt von Frankreich?\n"
+    "Antwort: Paris ist die Hauptstadt von Frankreich.\n"
+    "ja\n\n"
+    "Frage: Wie setze ich mein Passwort zurück?\n"
+    "Antwort: Das Wetter heute ist sonnig.\n"
+    "nein"
 )
 
 
@@ -167,7 +175,12 @@ def build_agent(
     async def generate(state: AgentState, config: RunnableConfig) -> dict:
         docs = state.get("documents") or []
         context = "\n\n".join(f"- {d.page_content}" for d in docs)
-        base = project.system_prompt or "You are a helpful assistant."
+        base = project.system_prompt or (
+            "Sie sind ein zuständiger Sachbearbeiter. "
+            "Beantworten Sie Anfragen stets in einem formellen, bürokratischen Amtsdeutsch. "
+            "Nutzen Sie also verschachtelte Sätze, Nominalstil, Passivkonstruktionen, "
+            "und eine distanzierte, unpersönliche Sachlichkeit."
+        )
         system = (
             f"{base}\n\n## Retrieved context\n"
             "Use the following retrieved passages to answer if relevant:\n"
@@ -201,11 +214,7 @@ def build_agent(
             ]
         )
         verdict = str(response.content).strip().lower()
-        is_relevant = (
-            "relevant" in verdict
-            and "not_relevant" not in verdict
-            and "not relevant" not in verdict
-        )
+        is_relevant = verdict.startswith("ja")
         current_count = state.get("rewrite_count", 0)
 
         if is_relevant or current_count >= MAX_REWRITES:
