@@ -120,6 +120,46 @@ def add_chunks(
     return store.add_documents(docs)
 
 
+def delete_by_doc_id(doc_id: str, client: QdrantClient | None = None) -> None:
+    """Delete all chunks whose doc_id matches (thread memory or document chunks)."""
+    c = client or get_client()
+    if not c.collection_exists(COLLECTION):
+        return
+    c.delete(
+        COLLECTION,
+        points_selector=models.FilterSelector(
+            filter=models.Filter(
+                must=[
+                    models.FieldCondition(
+                        key="metadata.doc_id",
+                        match=models.MatchValue(value=doc_id),
+                    )
+                ]
+            )
+        ),
+    )
+
+
+def delete_by_project_id(project_id: str, client: QdrantClient | None = None) -> None:
+    """Delete all chunks belonging to a project."""
+    c = client or get_client()
+    if not c.collection_exists(COLLECTION):
+        return
+    c.delete(
+        COLLECTION,
+        points_selector=models.FilterSelector(
+            filter=models.Filter(
+                must=[
+                    models.FieldCondition(
+                        key="metadata.project_id",
+                        match=models.MatchValue(value=project_id),
+                    )
+                ]
+            )
+        ),
+    )
+
+
 def search(
     embeddings: Embeddings,
     project_id: str,

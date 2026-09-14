@@ -1,5 +1,6 @@
 """SQLite storage layer: app tables (projects, threads) + checkpointer lifecycle."""
 
+import asyncio
 import json
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -9,6 +10,7 @@ import aiosqlite
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 
 from fp_int_agents.config import Document, Project, Thread
+from fp_int_agents.storage import vectorstore
 
 _DDL = """
 CREATE TABLE IF NOT EXISTS projects (
@@ -268,6 +270,7 @@ async def delete_thread(
     await conn.execute("DELETE FROM threads WHERE id = ?", (thread_id,))
     await conn.commit()
     await checkpointer.adelete_thread(thread_id)
+    await asyncio.to_thread(vectorstore.delete_by_doc_id, thread_id)
 
 
 async def delete_project(
@@ -280,6 +283,7 @@ async def delete_project(
     await conn.commit()
     for tid in thread_ids:
         await checkpointer.adelete_thread(tid)
+    await asyncio.to_thread(vectorstore.delete_by_project_id, project_id)
 
 
 # --- Documents ---
