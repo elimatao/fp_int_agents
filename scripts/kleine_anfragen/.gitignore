@@ -2,3 +2,13 @@ config.toml
 data/
 *.jsonl
 adapters*
+
+# Unignore the currently used adapters and their metadata
+!adapters_lr_e_-4/
+adapters_lr_e_-4/*
+!adapters_lr_e_-4/adapter_config.json
+!adapters_lr_e_-4/adapters.safetensors
+
+!adapters_reranker/
+adapters_reranker/*
+!adapters_reranker/final/
