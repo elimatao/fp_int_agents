@@ -1,9 +1,10 @@
 import asyncio
 import pathlib
 
+from langchain_core.messages import AnyMessage, HumanMessage
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal
-from textual.widgets import Footer, Header
+from textual.widgets import Footer, Header, Label
 
 from .agents.agent_caller import summarize_thread
 from .agents.registry import INGESTOR_AGENTS
@@ -21,6 +22,7 @@ from .storage.db import (
     list_threads,
     update_thread_memory_count,
     update_thread_summary,
+    update_thread_title,
 )
 from .widgets.chat import Chat
 from .widgets.ingest_modal import IngestModal
@@ -31,6 +33,18 @@ _AGENT_BUNDLES: dict[str, dict[str, str]] = {
     "simple": {"mem_agent": "simple", "ingestor": "simple"},
     "BundesRAG": {"mem_agent": "BundesRAG", "ingestor": "BundesRAG"},
 }
+
+_TITLE_MAX_LEN = 60
+
+
+def _title_from_messages(messages: list[AnyMessage]) -> str | None:
+    for m in messages:
+        if isinstance(m, HumanMessage):
+            text = str(m.content).strip()
+            if len(text) > _TITLE_MAX_LEN:
+                return text[: _TITLE_MAX_LEN - 1] + "…"
+            return text
+    return None
 
 
 class FPIntAgentsApp(App):
@@ -131,6 +145,11 @@ class FPIntAgentsApp(App):
         messages = snapshot["channel_values"].get("messages", [])
         if not messages:
             return
+        if thread and not thread.title:
+            title = _title_from_messages(messages)
+            if title:
+                await update_thread_title(self.db.conn, query_config.thread_id, title)
+                self._refresh_thread_title(query_config.thread_id, title)
         if thread and thread.summary_message_count == len(messages) and thread.memory_message_count == len(messages):
             return
         project = await get_project(self.db.conn, query_config.project_id)
@@ -154,6 +173,13 @@ class FPIntAgentsApp(App):
                 )
         except Exception as exc:  # noqa: BLE001 - summarization is best-effort
             self.log.warning(f"Thread summarization failed: {exc}")
+
+    def _refresh_thread_title(self, thread_id: str, title: str) -> None:
+        try:
+            label = self.query_one(f"#thread-{thread_id} Label", Label)
+            label.update(title)
+        except Exception:  # noqa: BLE001, S110
+            pass
 
     async def on_project_sidebar_thread_selected(
         self, event: ProjectSidebar.ThreadSelected

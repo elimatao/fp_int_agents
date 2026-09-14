@@ -244,6 +244,16 @@ async def update_thread_settings(
     await conn.commit()
 
 
+async def update_thread_title(
+    conn: aiosqlite.Connection, thread_id: str, title: str
+) -> None:
+    await conn.execute(
+        "UPDATE threads SET title = ? WHERE id = ?",
+        (title, thread_id),
+    )
+    await conn.commit()
+
+
 async def update_thread_summary(
     conn: aiosqlite.Connection, thread_id: str, summary: str, message_count: int
 ) -> None:
