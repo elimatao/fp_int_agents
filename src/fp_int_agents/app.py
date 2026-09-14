@@ -6,7 +6,7 @@ from textual.containers import Horizontal
 from textual.widgets import Footer, Header
 
 from .agents.agent_caller import summarize_thread
-from .agents.registry import CONVERSATIONAL_AGENTS, INGESTOR_AGENTS, MEMORY_AGENTS
+from .agents.registry import INGESTOR_AGENTS
 from .config import AppConfig, Project, QueryConfig, Thread
 from .constants import APP_NAME
 from .storage.db import (
@@ -19,12 +19,18 @@ from .storage.db import (
     get_thread,
     list_projects,
     list_threads,
+    update_thread_memory_count,
     update_thread_summary,
 )
 from .widgets.chat import Chat
 from .widgets.ingest_modal import IngestModal
 from .widgets.new_project_modal import NewProjectModal, NewProjectResult
 from .widgets.project_sidebar import ProjectSidebar
+
+_AGENT_BUNDLES: dict[str, dict[str, str]] = {
+    "simple": {"mem_agent": "simple", "ingestor": "simple"},
+    "rag": {"mem_agent": "rag", "ingestor": "rag"},
+}
 
 
 class FPIntAgentsApp(App):
@@ -125,21 +131,27 @@ class FPIntAgentsApp(App):
         messages = snapshot["channel_values"].get("messages", [])
         if not messages:
             return
-        if thread and thread.summary_message_count == len(messages):
+        if thread and thread.summary_message_count == len(messages) and thread.memory_message_count == len(messages):
             return
         project = await get_project(self.db.conn, query_config.project_id)
         if project is None or not project.mem_agent:
             return
         try:
-            summary = await summarize_thread(
+            summary, new_memory_count = await summarize_thread(
                 project=project,
-                query_config=query_config,
+                thread_id=query_config.thread_id,
                 messages=messages,
                 llm_config=self.config.llm,
+                conn=self.db.conn,
+                memory_message_count=(thread.memory_message_count or 0) if thread else 0,
             )
             await update_thread_summary(
                 self.db.conn, query_config.thread_id, summary, len(messages)
             )
+            if new_memory_count != ((thread.memory_message_count or 0) if thread else 0):
+                await update_thread_memory_count(
+                    self.db.conn, query_config.thread_id, new_memory_count
+                )
         except Exception as exc:  # noqa: BLE001 - summarization is best-effort
             self.log.warning(f"Thread summarization failed: {exc}")
 
@@ -155,16 +167,10 @@ class FPIntAgentsApp(App):
             if result is not None:
                 self.run_worker(self._create_project(result), exclusive=False)
 
-        self.push_screen(
-            NewProjectModal(
-                conv_agents=list(CONVERSATIONAL_AGENTS.keys()),
-                mem_agents=list(MEMORY_AGENTS.keys()),
-                ingestors=list(INGESTOR_AGENTS.keys()),
-            ),
-            _done,
-        )
+        self.push_screen(NewProjectModal(), _done)
 
     async def _create_project(self, result: NewProjectResult) -> None:
+        bundle = _AGENT_BUNDLES.get(result.agent, _AGENT_BUNDLES["simple"])
         init_config = (
             {"embedding_model": self.config.embedding_model}
             if result.agent == "rag"
@@ -175,8 +181,8 @@ class FPIntAgentsApp(App):
             result.name,
             self.config.chat_model,
             agent=result.agent,
-            mem_agent=result.mem_agent,
-            ingestor=result.ingestor,
+            mem_agent=bundle["mem_agent"],
+            ingestor=bundle["ingestor"],
             system_prompt=result.system_prompt or None,
             init_config=init_config,
         )

@@ -34,11 +34,8 @@
 
         - interrupt generation
         
-        - message queueing?
         - ingest button doesnt hide on project collapse
-        - keyboard shortcuts
         - interface responsive as often as possible
-        - multiline user input
     - Conversation History
         - Scrolling
         - Scroll stop on long generations
@@ -61,20 +58,14 @@
 - Memory / GraphRAG mechanism
     - recall prior information from groups of chats / Project folder
 
-    - graphrag
     - Add a dense conversation summarization mechanism that creates chunk embeddings of the conversation incrementally (don't recompute)
 
 - ToolSet extension
     - persist tools on file system
     - defined via name, description, executable?
     - refresh tool list every time you press the tools button in the input bar.
-
+    - remove default project generation
 
 
     - bug where system prompt is unnecessarily rebuilt in graph
-    - remove default project generation
     - investigate performance
-
-
-- nice to have
-    - graph rag

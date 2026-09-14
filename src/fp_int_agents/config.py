@@ -36,6 +36,7 @@ class Thread(BaseModel):
     chat_model: str | None = None  # None = use project default
     summary: str | None = None
     summary_message_count: int | None = None
+    memory_message_count: int | None = None
     created_at: str | None = None
 
 

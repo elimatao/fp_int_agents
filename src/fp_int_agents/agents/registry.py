@@ -1,6 +1,7 @@
 from collections.abc import Awaitable, Callable
 
 import aiosqlite
+from langchain_core.messages import AnyMessage
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.graph.state import CompiledStateGraph
 
@@ -11,13 +12,16 @@ ConversationalAgentFactory = Callable[
     CompiledStateGraph,
 ]
 
-MemoryAgentFactory = Callable[[Project, LlmConfig], CompiledStateGraph]
+MemoryFn = Callable[
+    [Project, list[AnyMessage], LlmConfig, aiosqlite.Connection | None, int, str],
+    Awaitable[tuple[str, int]],
+]
 
 IngestorFn = Callable[[Project, str, LlmConfig, aiosqlite.Connection], Awaitable[None]]
 
 CONVERSATIONAL_AGENTS: dict[str, ConversationalAgentFactory] = {}
 
-MEMORY_AGENTS: dict[str, MemoryAgentFactory] = {}
+MEMORY_AGENTS: dict[str, MemoryFn] = {}
 
 INGESTOR_AGENTS: dict[str, IngestorFn] = {}
 
@@ -28,8 +32,8 @@ def register_conversational_agent(
     CONVERSATIONAL_AGENTS[name] = factory
 
 
-def register_memory_agent(name: str, factory: MemoryAgentFactory) -> None:
-    MEMORY_AGENTS[name] = factory
+def register_memory_agent(name: str, fn: MemoryFn) -> None:
+    MEMORY_AGENTS[name] = fn
 
 
 def register_ingestor(name: str, fn: IngestorFn) -> None:

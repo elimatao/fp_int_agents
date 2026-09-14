@@ -62,12 +62,18 @@ def _ensure_collection(client: QdrantClient, dim: int) -> None:
         },
         sparse_vectors_config={SPARSE_VECTOR_NAME: models.SparseVectorParams()},
     )
-    client.create_payload_index(
-        COLLECTION,
-        field_name="metadata.project_id",
-        field_schema=models.PayloadSchemaType.KEYWORD,
-    )
 
+
+def _ensure_payload_indexes(client: QdrantClient) -> None:
+    for field in ("metadata.project_id", "metadata.source_type"):
+        try:
+            client.create_payload_index(
+                COLLECTION,
+                field_name=field,
+                field_schema=models.PayloadSchemaType.KEYWORD,
+            )
+        except Exception:  # noqa: BLE001, S110
+            pass
 
 def get_vector_store(
     embeddings: Embeddings, client: QdrantClient | None = None
@@ -75,6 +81,7 @@ def get_vector_store(
     """Get/create the hybrid vector store for the given dense embedding model."""
     client = client or get_client()
     _ensure_collection(client, _detect_dim(embeddings))
+    _ensure_payload_indexes(client)
     return QdrantVectorStore(
         client=client,
         collection_name=COLLECTION,
@@ -93,6 +100,7 @@ def add_chunks(
     chunks: list[str],
     title: str | None = None,
     client: QdrantClient | None = None,
+    source_type: str = "document",
 ) -> list[str]:
     """Embed (dense + sparse) and store chunks; payload carries doc_id + project_id + title."""
     store = get_vector_store(embeddings, client)
@@ -104,6 +112,7 @@ def add_chunks(
                 "doc_id": doc_id,
                 "title": title or doc_id,
                 "chunk_index": i,
+                "source_type": source_type,
             },
         )
         for i, chunk in enumerate(chunks)

@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS threads (
     chat_model            TEXT,
     summary               TEXT,
     summary_message_count INTEGER,
+    memory_message_count  INTEGER,
     created_at            TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -200,7 +201,7 @@ async def create_thread(
 
 async def get_thread(conn: aiosqlite.Connection, thread_id: str) -> Thread | None:
     async with conn.execute(
-        "SELECT id, project_id, title, active_tools, chat_model, summary, summary_message_count, created_at FROM threads WHERE id = ?",
+        "SELECT id, project_id, title, active_tools, chat_model, summary, summary_message_count, memory_message_count, created_at FROM threads WHERE id = ?",
         (thread_id,),
     ) as cursor:
         row = await cursor.fetchone()
@@ -211,7 +212,7 @@ async def get_thread(conn: aiosqlite.Connection, thread_id: str) -> Thread | Non
 
 async def list_threads(conn: aiosqlite.Connection, project_id: str) -> list[Thread]:
     async with conn.execute(
-        "SELECT id, project_id, title, active_tools, chat_model, summary, summary_message_count, created_at FROM threads WHERE project_id = ? ORDER BY created_at DESC",
+        "SELECT id, project_id, title, active_tools, chat_model, summary, summary_message_count, memory_message_count, created_at FROM threads WHERE project_id = ? ORDER BY created_at DESC",
         (project_id,),
     ) as cursor:
         cols = _cols(cursor)
@@ -247,6 +248,16 @@ async def update_thread_summary(
     await conn.execute(
         "UPDATE threads SET summary = ?, summary_message_count = ? WHERE id = ?",
         (summary, message_count, thread_id),
+    )
+    await conn.commit()
+
+
+async def update_thread_memory_count(
+    conn: aiosqlite.Connection, thread_id: str, count: int
+) -> None:
+    await conn.execute(
+        "UPDATE threads SET memory_message_count = ? WHERE id = ?",
+        (count, thread_id),
     )
     await conn.commit()
 

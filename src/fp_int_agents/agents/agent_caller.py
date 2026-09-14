@@ -151,14 +151,12 @@ async def call_agent(
 
 async def summarize_thread(
     project: Project,
-    query_config: QueryConfig,
+    thread_id: str,
     messages: list[AnyMessage],
     llm_config: LlmConfig = _DEFAULT_LLM_CONFIG,
-) -> str:
-    """Summarize a thread's messages and return the summary string."""
-    agent = MEMORY_AGENTS[project.mem_agent](project, llm_config)
-    result = await agent.ainvoke(
-        {"messages": messages, "summary": None},
-        query_config.to_runnable_config(),
-    )
-    return result["summary"]
+    conn: aiosqlite.Connection | None = None,
+    memory_message_count: int = 0,
+) -> tuple[str, int]:
+    """Call the project's memory function and return (summary, new_memory_message_count)."""
+    fn = MEMORY_AGENTS[project.mem_agent]
+    return await fn(project, messages, llm_config, conn, memory_message_count, thread_id)
