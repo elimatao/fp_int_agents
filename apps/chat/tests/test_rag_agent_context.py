@@ -44,7 +44,7 @@ async def test_query_rewriter_expands_question(monkeypatch) -> None:
                 rewrite_inputs.append(str(messages[-1].content))
                 return AIMessage(content="expanded question")
             # judge — always pass
-            return AIMessage(content="relevant")
+            return AIMessage(content="ja")
 
         def bind_tools(self, _tools):
             return self
@@ -109,7 +109,7 @@ async def test_hybrid_search_called_with_rewritten_query(monkeypatch) -> None:
 async def test_reranker_reduces_docs(monkeypatch) -> None:
     class FakeModel:
         async def ainvoke(self, messages):
-            return AIMessage(content="relevant")
+            return AIMessage(content="ja")
 
         def bind_tools(self, _tools):
             return self
@@ -150,7 +150,7 @@ async def test_relevance_judge_passes_relevant_answer(monkeypatch) -> None:
         async def ainvoke(self, messages):
             call_log.append(self._role)
             if self._role == "judge":
-                return AIMessage(content="relevant")
+                return AIMessage(content="ja")
             return AIMessage(content=f"{self._role}-output")
 
         def bind_tools(self, _tools):

@@ -26,6 +26,7 @@ def register_ping_tool():
     register(ping)
 
 
+@pytest.mark.network
 @pytest.mark.asyncio
 async def test_history_replay_renders_tool_call_bubble(tmp_path):
     app_cfg = await load_config()

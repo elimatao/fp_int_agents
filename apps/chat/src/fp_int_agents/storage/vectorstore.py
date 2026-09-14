@@ -75,6 +75,7 @@ def _ensure_payload_indexes(client: QdrantClient) -> None:
         except Exception:  # noqa: BLE001, S110
             pass
 
+
 def get_vector_store(
     embeddings: Embeddings, client: QdrantClient | None = None
 ) -> QdrantVectorStore:

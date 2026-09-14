@@ -74,7 +74,9 @@ def embeddings(req: EmbedRequest) -> EmbedResponse:
 
     total_tokens = sum(len(t.split()) for t in texts)
     return EmbedResponse(
-        data=[EmbedObject(index=i, embedding=vec.tolist()) for i, vec in enumerate(vecs)],
+        data=[
+            EmbedObject(index=i, embedding=vec.tolist()) for i, vec in enumerate(vecs)
+        ],
         model=_model_name,
         usage=UsageInfo(prompt_tokens=total_tokens, total_tokens=total_tokens),
     )

@@ -56,7 +56,9 @@ def chunk_messages_by_turns(
         window = turns[i : i + chunk_turns]
         first_idx = window[0][0]
         last_msg_list = window[-1][1]
-        last_idx = turns[min(i + chunk_turns - 1, len(turns) - 1)][0] + len(last_msg_list) - 1
+        last_idx = (
+            turns[min(i + chunk_turns - 1, len(turns) - 1)][0] + len(last_msg_list) - 1
+        )
 
         # Skip chunks that end entirely within already-stored range
         if last_idx < start_message_index:
@@ -90,7 +92,9 @@ async def memorize_thread(
     if not chunks:
         return "No new memory chunks.", memory_message_count
 
-    embedding_model = project.init_config.get("embedding_model") or _DEFAULT_EMBEDDING_MODEL
+    embedding_model = (
+        project.init_config.get("embedding_model") or _DEFAULT_EMBEDDING_MODEL
+    )
     embeddings = get_embedding_model(
         base_url=llm_config.base_url,
         model=embedding_model,

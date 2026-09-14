@@ -30,7 +30,7 @@ class FakeChatModel:
         last_content = str(messages[-1].content)
         if "target" in last_content:
             return AIMessage(content="target")
-        return AIMessage(content="relevant")
+        return AIMessage(content="ja")
 
     def bind_tools(self, _tools):
         return self

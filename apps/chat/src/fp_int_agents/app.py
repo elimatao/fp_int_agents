@@ -150,7 +150,11 @@ class FPIntAgentsApp(App):
             if title:
                 await update_thread_title(self.db.conn, query_config.thread_id, title)
                 self._refresh_thread_title(query_config.thread_id, title)
-        if thread and thread.summary_message_count == len(messages) and thread.memory_message_count == len(messages):
+        if (
+            thread
+            and thread.summary_message_count == len(messages)
+            and thread.memory_message_count == len(messages)
+        ):
             return
         project = await get_project(self.db.conn, query_config.project_id)
         if project is None or not project.mem_agent:
@@ -162,12 +166,16 @@ class FPIntAgentsApp(App):
                 messages=messages,
                 llm_config=self.config.llm,
                 conn=self.db.conn,
-                memory_message_count=(thread.memory_message_count or 0) if thread else 0,
+                memory_message_count=(thread.memory_message_count or 0)
+                if thread
+                else 0,
             )
             await update_thread_summary(
                 self.db.conn, query_config.thread_id, summary, len(messages)
             )
-            if new_memory_count != ((thread.memory_message_count or 0) if thread else 0):
+            if new_memory_count != (
+                (thread.memory_message_count or 0) if thread else 0
+            ):
                 await update_thread_memory_count(
                     self.db.conn, query_config.thread_id, new_memory_count
                 )
@@ -261,7 +269,11 @@ class FPIntAgentsApp(App):
     def _collect_ingest_paths(cls, path: str) -> list[pathlib.Path]:
         p = pathlib.Path(path)
         if p.is_dir():
-            return sorted(f for f in p.iterdir() if f.is_file() and f.suffix.lower() in cls._INGESTIBLE_SUFFIXES)
+            return sorted(
+                f
+                for f in p.iterdir()
+                if f.is_file() and f.suffix.lower() in cls._INGESTIBLE_SUFFIXES
+            )
         return [p]
 
     @staticmethod

@@ -168,7 +168,7 @@ def build_agent(
                     if results:
                         ranked_docs = [docs[item["index"]] for item in results]
                         return {"documents": ranked_docs}
-            except Exception:
+            except Exception:  # noqa: BLE001, S110
                 pass
 
         # Fallback to lexical score if reranker service unavailable or not configured

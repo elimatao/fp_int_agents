@@ -34,7 +34,7 @@ def get_config_endpoints() -> tuple[str, str, str, str, str | None, int]:
                 if isinstance(embeddings_sec, dict) and "url" in embeddings_sec:
                     embeddings_url = embeddings_sec["url"]
                 hf_key = cfg.get("huggingface", {}).get("hf_key")
-        except Exception:
+        except Exception:  # noqa: BLE001, S110
             pass
 
     parsed = urlparse(base_url)
@@ -77,7 +77,7 @@ def wait_for_services(
                     if resp.status_code in (200, 401, 403):
                         ready[name] = True
                         print(f"  [+] {name} is online.")
-                except Exception:
+                except Exception:  # noqa: BLE001, S110
                     pass
 
         if all(ready.values()):

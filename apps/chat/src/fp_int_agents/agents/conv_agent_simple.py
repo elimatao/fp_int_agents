@@ -79,7 +79,7 @@ def build_agent(
     async def _llm_call(state: AgentState, config: RunnableConfig) -> AgentState:
         return {
             "messages": [
-                _build_model(config).invoke(
+                await _build_model(config).ainvoke(
                     [SystemMessage(content=await _build_system_prompt(config))]
                     + state["messages"]
                 )

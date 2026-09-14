@@ -13,9 +13,7 @@ async def test_load_config_merges_root_urls_and_app_defaults(
 [llm]
 base_url = "http://custom-proxy:4000/v1"
 api_key = "secret-key-123"
-
-[reranker]
-url = "http://custom-reranker:8001/v1/rerank"
+reranker_url = "http://custom-reranker:8001/v1/rerank"
 """,
         encoding="utf-8",
     )

@@ -33,7 +33,9 @@ class TestCollectIngestPaths:
         result = FPIntAgentsApp._collect_ingest_paths(str(tmp_path))
         assert result == []
 
-    def test_folder_includes_all_supported_extensions(self, tmp_path: pathlib.Path) -> None:
+    def test_folder_includes_all_supported_extensions(
+        self, tmp_path: pathlib.Path
+    ) -> None:
         for ext in SUPPORTED:
             (tmp_path / f"file{ext}").write_bytes(b"")
         result = FPIntAgentsApp._collect_ingest_paths(str(tmp_path))
@@ -69,8 +71,13 @@ class TestRunIngestFolder:
 
         app = _make_app()
         with (
-            patch.dict("fp_int_agents.agents.registry.INGESTOR_AGENTS", {"simple": fake_ingestor}),
-            patch.object(type(app), "log", new_callable=PropertyMock, return_value=MagicMock()),
+            patch.dict(
+                "fp_int_agents.agents.registry.INGESTOR_AGENTS",
+                {"simple": fake_ingestor},
+            ),
+            patch.object(
+                type(app), "log", new_callable=PropertyMock, return_value=MagicMock()
+            ),
         ):
             await app._run_ingest(mock_project, str(tmp_path))
 
@@ -82,7 +89,9 @@ class TestRunIngestFolder:
         mock_project.ingestor = "simple"
 
         app = _make_app()
-        with patch.object(type(app), "log", new_callable=PropertyMock, return_value=MagicMock()):
+        with patch.object(
+            type(app), "log", new_callable=PropertyMock, return_value=MagicMock()
+        ):
             await app._run_ingest(mock_project, str(tmp_path))
 
         app.notify.assert_called_once()

@@ -138,7 +138,7 @@ async def load_config() -> AppConfig:
             models = await list_models(cfg.llm.base_url, cfg.llm.api_key)
             if models:
                 cfg.chat_model = models[0].id
-        except Exception:
+        except Exception:  # noqa: BLE001, S110
             pass
 
     return cfg

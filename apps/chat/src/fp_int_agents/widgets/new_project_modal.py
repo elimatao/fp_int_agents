@@ -72,11 +72,16 @@ class NewProjectModal(ModalScreen[NewProjectResult | None]):
             yield Input(placeholder="New Project", id="project-name")
             yield Label("Project type")
             yield RadioSet(
-                *[RadioButton(t, value=(t == _PROJECT_TYPES[0])) for t in _PROJECT_TYPES],
+                *[
+                    RadioButton(t, value=(t == _PROJECT_TYPES[0]))
+                    for t in _PROJECT_TYPES
+                ],
                 id="type-radio",
             )
             yield Label("System prompt")
-            yield TextArea(_DEFAULT_SYSTEM_PROMPTS[_PROJECT_TYPES[0]], id="system-prompt")
+            yield TextArea(
+                _DEFAULT_SYSTEM_PROMPTS[_PROJECT_TYPES[0]], id="system-prompt"
+            )
             with Container(classes="buttons"):
                 yield Button("Cancel", variant="default", id="cancel")
                 yield Button("Create", variant="primary", id="confirm")
@@ -96,6 +101,8 @@ class NewProjectModal(ModalScreen[NewProjectResult | None]):
                 else _PROJECT_TYPES[0]
             )
             system_prompt = self.query_one("#system-prompt", TextArea).text
-            self.dismiss(NewProjectResult(name=name, agent=agent, system_prompt=system_prompt))
+            self.dismiss(
+                NewProjectResult(name=name, agent=agent, system_prompt=system_prompt)
+            )
         elif event.button.id == "cancel":
             self.dismiss(None)

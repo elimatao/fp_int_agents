@@ -1,4 +1,5 @@
 """Tests for the embeddings server."""
+
 import importlib
 import sys
 from unittest.mock import MagicMock, patch
@@ -17,6 +18,7 @@ def client_and_model():
 
         sys.modules.pop("services.model_server.serve_embeddings", None)
         import services.model_server.serve_embeddings as mod
+
         importlib.reload(mod)
         yield TestClient(mod.app), mock_model
 
@@ -34,7 +36,10 @@ def test_health(client_and_model: tuple) -> None:
 def test_embed_single_string(client_and_model: tuple) -> None:
     client, mock_model = client_and_model
     mock_model.encode.return_value = np.array([[0.1, 0.2, 0.3]])
-    resp = client.post("/v1/embeddings", json={"input": "hello world", "model": "multilingual-e5-small"})
+    resp = client.post(
+        "/v1/embeddings",
+        json={"input": "hello world", "model": "multilingual-e5-small"},
+    )
     assert resp.status_code == 200
     body = resp.json()
     assert body["object"] == "list"
@@ -46,7 +51,10 @@ def test_embed_single_string(client_and_model: tuple) -> None:
 def test_embed_list(client_and_model: tuple) -> None:
     client, mock_model = client_and_model
     mock_model.encode.return_value = np.array([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]])
-    resp = client.post("/v1/embeddings", json={"input": ["hello", "world"], "model": "multilingual-e5-small"})
+    resp = client.post(
+        "/v1/embeddings",
+        json={"input": ["hello", "world"], "model": "multilingual-e5-small"},
+    )
     assert resp.status_code == 200
     body = resp.json()
     assert len(body["data"]) == 2

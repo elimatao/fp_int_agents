@@ -159,4 +159,6 @@ async def summarize_thread(
 ) -> tuple[str, int]:
     """Call the project's memory function and return (summary, new_memory_message_count)."""
     fn = MEMORY_AGENTS[project.mem_agent]
-    return await fn(project, messages, llm_config, conn, memory_message_count, thread_id)
+    return await fn(
+        project, messages, llm_config, conn, memory_message_count, thread_id
+    )
