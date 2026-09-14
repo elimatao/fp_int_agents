@@ -7,7 +7,7 @@ from textual.widgets import Button, Input, Label, RadioButton, RadioSet, TextAre
 
 _DEFAULT_SYSTEM_PROMPT = "You are a helpful assistant."
 
-_PROJECT_TYPES = ["simple", "rag"]
+_PROJECT_TYPES = ["simple", "BundesRAG"]
 
 
 @dataclass

@@ -1,6 +1,4 @@
-import pathlib
 import pytest
-
 from fp_int_agents.config import load_config
 
 
@@ -31,7 +29,7 @@ url = "http://custom-reranker:8001/v1/rerank"
 [defaults]
 chat_model = "custom-llm"
 embedding_model = "custom-embed"
-agent = "rag"
+agent = "BundesRAG"
 mem_agent = "simple"
 db_path = "custom/path.db"
 """,
@@ -51,7 +49,7 @@ db_path = "custom/path.db"
     # App defaults verified
     assert cfg.chat_model == "custom-llm"
     assert cfg.embedding_model == "custom-embed"
-    assert cfg.agent == "rag"
+    assert cfg.agent == "BundesRAG"
     assert cfg.mem_agent == "simple"
     assert cfg.db_path == "custom/path.db"
 

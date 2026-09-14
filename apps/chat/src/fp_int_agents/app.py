@@ -29,7 +29,7 @@ from .widgets.project_sidebar import ProjectSidebar
 
 _AGENT_BUNDLES: dict[str, dict[str, str]] = {
     "simple": {"mem_agent": "simple", "ingestor": "simple"},
-    "rag": {"mem_agent": "rag", "ingestor": "rag"},
+    "BundesRAG": {"mem_agent": "BundesRAG", "ingestor": "BundesRAG"},
 }
 
 
@@ -173,7 +173,7 @@ class FPIntAgentsApp(App):
         bundle = _AGENT_BUNDLES.get(result.agent, _AGENT_BUNDLES["simple"])
         init_config = (
             {"embedding_model": self.config.embedding_model}
-            if result.agent == "rag"
+            if result.agent == "BundesRAG"
             else {}
         )
         project = await create_project(
@@ -207,18 +207,36 @@ class FPIntAgentsApp(App):
 
         self.push_screen(IngestModal(), _done)
 
+    _INGESTIBLE_SUFFIXES: frozenset[str] = frozenset(
+        {".pdf", ".txt", ".md", ".py", ".rst", ".html", ".xml", ".json"}
+    )
+
     async def _run_ingest(self, project: Project, path: str) -> None:
         assert project.ingestor is not None
-        try:
-            text = await asyncio.to_thread(self._read_file, path)
-            title = pathlib.Path(path).name
-            await INGESTOR_AGENTS[project.ingestor](
-                project, text, self.config.llm, self.db.conn, title
-            )
-            self.notify(f"Ingested {path}")
-        except Exception as exc:  # noqa: BLE001 - surface failure to the user
-            self.log.warning(f"Ingest failed: {exc}")
-            self.notify(f"Ingest failed: {exc}", severity="error")
+        files = self._collect_ingest_paths(path)
+        if not files:
+            self.notify(f"No supported files found in {path}", severity="warning")
+            return
+
+        async def _ingest_one(p: pathlib.Path) -> None:
+            try:
+                text = await asyncio.to_thread(self._read_file, str(p))
+                await INGESTOR_AGENTS[project.ingestor](  # type: ignore[index]
+                    project, text, self.config.llm, self.db.conn, p.name
+                )
+                self.notify(f"Ingested {p.name}")
+            except Exception as exc:  # noqa: BLE001
+                self.log.warning(f"Ingest failed for {p}: {exc}")
+                self.notify(f"Ingest failed: {p.name} — {exc}", severity="error")
+
+        await asyncio.gather(*(_ingest_one(f) for f in files))
+
+    @classmethod
+    def _collect_ingest_paths(cls, path: str) -> list[pathlib.Path]:
+        p = pathlib.Path(path)
+        if p.is_dir():
+            return sorted(f for f in p.iterdir() if f.is_file() and f.suffix.lower() in cls._INGESTIBLE_SUFFIXES)
+        return [p]
 
     @staticmethod
     def _read_file(path: str) -> str:

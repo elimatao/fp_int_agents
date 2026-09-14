@@ -12,15 +12,15 @@ async def test_ingestor_and_init_config_persist(tmp_path) -> None:
             db.conn,
             "R",
             "llama3.2",
-            agent="rag",
-            ingestor="rag",
+            agent="BundesRAG",
+            ingestor="BundesRAG",
             init_config={"embedding_model": "text-embedding-3-small"},
         )
 
         reloaded = await get_project(db.conn, project.id)
         assert reloaded is not None
-        assert reloaded.agent == "rag"
-        assert reloaded.ingestor == "rag"
+        assert reloaded.agent == "BundesRAG"
+        assert reloaded.ingestor == "BundesRAG"
         assert reloaded.init_config == {"embedding_model": "text-embedding-3-small"}
 
 

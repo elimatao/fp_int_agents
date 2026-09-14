@@ -51,7 +51,7 @@ Defines where models and external services are hosted (`cp config.toml.example c
 Defines chat application behavior (`cp apps/chat/config.toml.example apps/chat/config.toml`):
 - `defaults.chat_model`: Active model name (e.g. `"qwen-kleine-anfragen"`).
 - `defaults.embedding_model`: Text embedding model.
-- `defaults.agent`: Default agent type (`"simple"` or `"rag"`).
+- `defaults.agent`: Default agent type (`"simple"` or `"BundesRAG"`).
 - `defaults.db_path`: SQLite database path (default: `"data/app.db"`).
 
 ### 2. Optional Local LiteLLM Proxy (`services/model_server/litellm_config.yaml`)

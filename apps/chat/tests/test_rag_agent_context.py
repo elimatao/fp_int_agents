@@ -10,7 +10,7 @@ from langchain_core.messages import AIMessage, HumanMessage
 def _project(**kwargs) -> Project:
     return Project(
         name="R",
-        agent="rag",
+        agent="BundesRAG",
         chat_model="llama3.2",
         init_config={"embedding_model": "multilingual-e5-small"},
         **kwargs,

@@ -2,7 +2,7 @@
 
 - ``simple``: summarize the text and store {summary, original} in SQLite. No
   embeddings; the summary is injected into the conv_agent_simple system prompt.
-- ``rag``: chunk, dense-embed + BM25-sparse, store chunks in Qdrant (hybrid).
+- ``BundesRAG``: chunk, dense-embed + BM25-sparse, store chunks in Qdrant (hybrid).
 """
 
 import asyncio
@@ -77,4 +77,4 @@ async def ingest_rag(
 
 
 register_ingestor("simple", ingest_simple)
-register_ingestor("rag", ingest_rag)
+register_ingestor("BundesRAG", ingest_rag)

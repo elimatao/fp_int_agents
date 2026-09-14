@@ -9,7 +9,7 @@ from langchain_core.messages import AIMessage, HumanMessage
 def _project(**kwargs) -> Project:
     return Project(
         name="RerankerTest",
-        agent="rag",
+        agent="BundesRAG",
         chat_model="default_model",
         init_config={
             "embedding_model": "multilingual-e5-small",

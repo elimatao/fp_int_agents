@@ -15,6 +15,28 @@ wheels/
 
 config.toml
 
+# Environment & secrets
+.env
+.env.*
+*.pem
+*.key
+*.pfx
+*.p12
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+
+# OS & Editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
 # data dir — track structure, ignore contents
 data/*
 !data/.gitkeep

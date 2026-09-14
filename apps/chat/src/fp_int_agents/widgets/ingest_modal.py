@@ -39,8 +39,8 @@ class IngestModal(ModalScreen[str | None]):
 
     def compose(self) -> ComposeResult:
         with Container(classes="dialog"):
-            yield Label("File path (.pdf or text)", classes="first")
-            yield Input(placeholder="/path/to/file.pdf", id="ingest-path")
+            yield Label("File or folder path (.pdf or text)", classes="first")
+            yield Input(placeholder="/path/to/file.pdf or /path/to/folder", id="ingest-path")
             with Container(classes="buttons"):
                 yield Button("Cancel", variant="default", id="cancel")
                 yield Button("Ingest", variant="primary", id="confirm")
