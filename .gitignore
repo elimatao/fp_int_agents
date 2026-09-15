@@ -40,3 +40,6 @@ Thumbs.db
 # data dir — track structure, ignore contents
 data/*
 !data/.gitkeep
+
+
+*.mov

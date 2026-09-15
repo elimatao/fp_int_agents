@@ -1,1 +1,1 @@
-APP_NAME = "fp-int-agents"
+APP_NAME = "BundesRAG"

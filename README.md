@@ -2,6 +2,10 @@
 
 A Textual TUI chat app with LangGraph, hybrid Qdrant retrieval, and local Apple Silicon model serving (MLX + BGE Reranker + LiteLLM).
 
+Also see this [video demo](https://github.com/elimatao/fp_int_agents/issues/1) of the project.
+
+If you have any issues running the project, please don't hesitate to contact me!
+
 ## Prerequisites
 
 - **Apple Silicon Mac** (M1 or later) — MLX model serving requires it
@@ -110,6 +114,15 @@ fp_int_agents/
 ```
 
 ---
+
+## BundesRAG workflow
+1. run `uv run scripts/kleine_anfragen/fetch_kleine_anfragen.py --help` and use the displayed information to run it again with the specific filters of the "kleine Anfragen" you want to fetch.
+2. copy the path of the generated `data/pdf` subfolder.
+3. start the app with `uv run python launch.py`
+4. create a new project
+5. click "Ingest document" and paste the copied path in the dialog.
+6. click "Ingest" and wait a bit
+7. Happy querying!
 
 ## Further Documentation
 
