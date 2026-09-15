@@ -47,7 +47,7 @@ def wait_for_services(
     api_key: str,
     reranker_url: str,
     embeddings_url: str,
-    timeout_seconds: int = 40,
+    timeout_seconds: int = 120,
 ) -> bool:
     print("Waiting for model endpoints to become ready...")
     start_time = time.time()
