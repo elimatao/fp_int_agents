@@ -115,6 +115,13 @@ fp_int_agents/
 
 ---
 
+## Defining new tools
+
+Tools are defined in `apps/chat/src/fp_int_agents/tools`.
+They can be defined in two ways (see minimal reference exmples in the repo):
+- langchain-decorated tool functions in `tools.py`. For more examples, see [Langchain tools documentation](https://docs.langchain.com/oss/python/langchain/tools)
+- Openai-compatible json tool definitions in `tools.json`, with an extra field `"command": "shell script "`
+
 ## BundesRAG workflow
 1. run `uv run scripts/kleine_anfragen/fetch_kleine_anfragen.py --help` and use the displayed information to run it again with the specific filters of the "kleine Anfragen" you want to fetch.
 2. copy the path of the generated `data/pdf` subfolder.
